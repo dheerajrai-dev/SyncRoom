@@ -1,6 +1,7 @@
-from fastapi import FastAPI , HTTPException , status , Header , Depends
+from fastapi import FastAPI , HTTPException , status , Header , Depends , WebSocket ,WebSocketDisconnect
 from .storage import generate_code , host_token , rooms , participant_id , ws_token
-from .model import ApproveRequest, Room_Code , JoinRequest , JoinResponse
+from .model import ApproveRequest, Room_Code , JoinRequest , JoinResponse , deniedRequest
+
 
 app = FastAPI()
 
@@ -111,3 +112,41 @@ def check_join_status(room_code: str, participant_id: str):
         response["ws_token"] = participant["ws_token"]
     return response
 
+
+# Request to deny the participants
+@app.post("/rooms/{room_code}/deny")
+def denied_participant(
+    room_code : str,
+    denied_request :deniedRequest,
+    room: dict = Depends(verify_host_token)
+    ):
+    participant = room["participants"].get(denied_request.participant_id)
+    if room_code not in rooms:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Room not found"
+        )
+    
+    if participant is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Participant not found"
+        )
+    
+    participant["status"] = "denied"
+    
+    return {"message": "Participant denied successfully",
+            "participant_id": denied_request.participant_id }
+
+#test websocket connection
+@app.websocket("/ws/echos")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    
+    try: 
+     while True:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"Message text was: {data}")
+
+    except WebSocketDisconnect:
+        print("Client disconnected")

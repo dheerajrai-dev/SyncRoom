@@ -13,3 +13,6 @@ class JoinResponse(BaseModel):
 
 class ApproveRequest(BaseModel):
     participant_id: str
+
+class deniedRequest(BaseModel):
+    participant_id : str
