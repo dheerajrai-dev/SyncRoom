@@ -142,7 +142,7 @@ def denied_participant(
 @app.websocket("/ws/echos")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    
+
     try: 
      while True:
             data = await websocket.receive_text()
@@ -150,3 +150,56 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         print("Client disconnected")
+
+
+
+@app.websocket("/ws/rooms/{room_code}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    room_code: str,
+    token: str
+):
+    room = rooms.get(room_code)
+
+    # Check if room exists
+    if room is None:
+        await websocket.accept()
+        await websocket.send_text("Room not found")
+        await websocket.close()
+        return
+
+    matched_participant = None
+
+    # Find the participant with this ws_token
+    for participant_id, participant_data in room["participants"].items():
+        if participant_data.get("ws_token") == token:
+            matched_participant = participant_data
+            break
+
+    # No matching token
+    if matched_participant is None:
+        await websocket.accept()
+        await websocket.send_text("Invalid WebSocket token")
+        await websocket.close()
+        return
+
+    # Save the live websocket connection
+    matched_participant["websocket"] = websocket
+
+    await websocket.accept()
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            for participant in room["participants"].values():
+                websocket = participant.get("websocket")
+
+                if websocket:
+                    await websocket.send_text(
+                        f"{matched_participant['username']}: {data}"
+                    )
+
+    except WebSocketDisconnect:
+        matched_participant["websocket"] = None
+        print(f"{matched_participant['username']} disconnected")
+    
