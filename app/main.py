@@ -1,7 +1,7 @@
 from fastapi import FastAPI , HTTPException , status , Header , Depends , WebSocket ,WebSocketDisconnect
-from .storage import generate_code , host_token , rooms , participant_id , ws_token
-from .model import ApproveRequest, Room_Code , JoinRequest , JoinResponse , deniedRequest
-
+from .storage import generate_code , host_token , rooms , participant_id , ws_token , message_id
+from .model import ApproveRequest, Room_Code , JoinRequest , JoinResponse , DeniedRequest, chat_Message
+from pydantic import ValidationError
 
 app = FastAPI()
 
@@ -16,7 +16,7 @@ async def read_root():
 def create_room():
     room_code = generate_code()
     host_token_value = host_token()
-    rooms[room_code] = {"host token": host_token_value , "participants": {}}
+    rooms[room_code] = {"host token": host_token_value , "participants": {} , "messages": []}
     return Room_Code(code=room_code, host_token=host_token_value)
 
 
@@ -117,7 +117,7 @@ def check_join_status(room_code: str, participant_id: str):
 @app.post("/rooms/{room_code}/deny")
 def denied_participant(
     room_code : str,
-    denied_request :deniedRequest,
+    denied_request :DeniedRequest,
     room: dict = Depends(verify_host_token)
     ):
     participant = room["participants"].get(denied_request.participant_id)
@@ -191,15 +191,39 @@ async def websocket_endpoint(
     try:
         while True:
             data = await websocket.receive_text()
-            for participant in room["participants"].values():
-                websocket = participant.get("websocket")
 
-                if websocket:
-                    await websocket.send_text(
-                        f"{matched_participant['username']}: {data}"
-                    )
+            try:
+                incoming = chat_Message.model_validate_json(data)
+
+                message_record = {
+                    "type": "chat_message",
+                    "message_id": message_id(),
+                    "participant_id": matched_participant["participant_id"],
+                    "username": matched_participant["username"],
+                    "content": incoming.content,
+                }
+
+                room["messages"].append(message_record)
+
+                for participant in room["participants"].values():
+                    connection = participant.get("websocket")
+                    if connection:
+                        await connection.send_json(message_record)
+
+            except ValidationError:
+                await websocket.send_text("Invalid message format")
 
     except WebSocketDisconnect:
         matched_participant["websocket"] = None
         print(f"{matched_participant['username']} disconnected")
+
+        
+# get the list of messages in a room by providing the room code and host token
+@app.get("/rooms/{room_code}/messages")
+def get_messages(room_code: str, room: dict = Depends(verify_host_token)):
+
+    room_id = rooms.get(room_code)
+    if room_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     
+    return {"messages": room_id["messages"]}

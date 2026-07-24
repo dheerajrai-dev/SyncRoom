@@ -19,3 +19,6 @@ def participant_id():
 def ws_token():
     ws_token = secrets.token_urlsafe(16)
     return ws_token
+
+def message_id():
+    return str(uuid.uuid4())
