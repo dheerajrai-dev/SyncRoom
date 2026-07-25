@@ -22,3 +22,18 @@ def ws_token():
 
 def message_id():
     return str(uuid.uuid4())
+
+async def broadcast_message(
+    message: dict,
+    participants: dict,
+    exclude_participant_id: str | None = None
+):
+    for participant_id, participant in participants.items():
+
+        if participant_id == exclude_participant_id:
+            continue
+
+        connection = participant.get("websocket")
+
+        if connection:
+            await connection.send_json(message)
