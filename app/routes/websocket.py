@@ -1,7 +1,7 @@
 import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
-from ..model import chat_Message
+from ..model import DeniedRequest, chat_Message
 from ..storage import message_id, rooms , broadcast_message , is_reconnect_expired
 
 router = APIRouter()
@@ -122,7 +122,7 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         while True:
             data = await websocket.receive_text()
             try:
-                incoming = chat_Message.model_validate_json(data)
+                incoming = chat_Message.content.model_validate_json(data)
 
                 # Store message in room history
                 message_record = {

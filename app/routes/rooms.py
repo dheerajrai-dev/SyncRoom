@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_host_token
 from ..model import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code
-from ..storage import generate_code, host_token, message_id, participant_id, rooms, ws_token
+from ..storage import broadcast_message, generate_code, host_token , participant_id, rooms, ws_token
 
 router = APIRouter()
 
@@ -10,7 +10,7 @@ router = APIRouter()
 def create_room():
     room_code = generate_code()
     host_token_value = host_token()
-    rooms[room_code] = {"host_token": host_token_value, "participants": {}, "messages": []}
+    rooms[room_code] = {"host_token": host_token_value, "participants": {}, "messages": [] , "locked": False}
     return Room_Code(code=room_code, host_token=host_token_value)
 
 # Get room details by room code
@@ -32,6 +32,9 @@ def join_room(room_code: str, join_request: JoinRequest):
     room = rooms.get(room_code)
     if room is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+
+    if room["locked"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Room is locked to new participants")
 
     pid = participant_id()
     room["participants"][pid] = {
@@ -100,3 +103,46 @@ def check_join_status(room_code: str, participant_id: str):
 @router.get("/rooms/{room_code}/messages")
 def get_messages(room_code: str, room: dict = Depends(verify_host_token)):
     return {"messages": room["messages"]}
+
+
+# host kicks a participant from the room
+@router.post("/rooms/{room_code}/kick")
+async def kick_participant(room_code: str, kick_request: DeniedRequest, room: dict = Depends(verify_host_token)):
+    participant = room["participants"].get(kick_request.participant_id)
+    if participant is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
+
+    # Remove participant from the room
+    if participant["websocket"] is not None :
+        await participant["websocket"].send_text("You have been kicked from the room")
+        participant["ws_token"] = None
+        participant["status"] = "kicked"
+        await participant["websocket"].close()
+        participant["websocket"] = None
+        participant["disconnected_at"] = None
+
+        # Broadcast message to all connected participants
+        await broadcast_message(
+                    {
+                        "type": "participant_kicked",
+                        "username": participant["username"]
+                    },
+                    room["participants"],
+                    exclude_participant_id=participant["participant_id"]
+            )
+
+    participant["ws_token"] = None 
+    participant["status"] = "kicked"
+    return {"message": f"{participant['username']} kicked successfully"}
+
+# locked the room for new participants
+@router.post("/rooms/{room_code}/lock")
+def lock_room(room_code: str, room: dict = Depends(verify_host_token)):
+    room["locked"] = True
+    return {"message": "Room locked successfully"}
+
+# unlocked the room for new participants
+@router.post("/rooms/{room_code}/unlock")
+def unlock_room(room_code: str, room: dict = Depends(verify_host_token)):
+    room["locked"] = False
+    return {"message": "Room unlocked successfully"}
