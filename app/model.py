@@ -20,3 +20,6 @@ class DeniedRequest(BaseModel):
 class chat_Message(BaseModel):
     type: str
     content: str
+
+class RoomName(BaseModel):
+    name: str

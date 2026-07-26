@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_host_token
-from ..model import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code
-from ..storage import broadcast_message, generate_code, host_token , participant_id, rooms, ws_token
+from ..model import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code , RoomName
+from ..storage import MAX_PARTICIPANTS, broadcast_message, generate_code, host_token , participant_id, rooms, ws_token
 
 router = APIRouter()
 
@@ -10,7 +10,11 @@ router = APIRouter()
 def create_room():
     room_code = generate_code()
     host_token_value = host_token()
-    rooms[room_code] = {"host_token": host_token_value, "participants": {}, "messages": [] , "locked": False}
+    rooms[room_code] = {"host_token": host_token_value,
+                         "participants": {},
+                         "messages": [] ,
+                         "locked": False,
+                         "name": None}
     return Room_Code(code=room_code, host_token=host_token_value)
 
 # Get room details by room code
@@ -23,8 +27,20 @@ def get_room(room_code: str):
 
 # Delete a room after host token verification
 @router.delete("/rooms/{room_code}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_room(room_code: str, room: dict = Depends(verify_host_token)):
+async def delete_room(room_code: str, room: dict = Depends(verify_host_token)):
+    await broadcast_message({
+        "type": "room_deleted",
+        "message": "Room has been deleted by the host"
+    }, room["participants"])
+
+    # Close all participant websockets
+    for participant in room["participants"].values():
+        if participant["websocket"] is not None:
+            await participant["websocket"].close()
+
     del rooms[room_code]
+    return 
+    
 
 # Participant requests to join a room
 @router.post("/rooms/{room_code}/join", response_model=JoinResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -35,6 +51,17 @@ def join_room(room_code: str, join_request: JoinRequest):
 
     if room["locked"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Room is locked to new participants")
+
+    active_participants = sum(
+        1 for participant in room["participants"].values()
+        if participant["status"] in ("pending", "approved")
+    )
+
+    if active_participants >= MAX_PARTICIPANTS:
+        raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Room is full"
+    )
 
     pid = participant_id()
     room["participants"][pid] = {
@@ -146,3 +173,16 @@ def lock_room(room_code: str, room: dict = Depends(verify_host_token)):
 def unlock_room(room_code: str, room: dict = Depends(verify_host_token)):
     room["locked"] = False
     return {"message": "Room unlocked successfully"}
+
+# Set the name of the room
+@router.patch("/rooms/{room_code}/rename")
+async def set_room_name(room_code: str, room_name: RoomName, room: dict = Depends(verify_host_token)):
+    room["Name"] = room_name.name
+    await broadcast_message(
+        {
+            "type": "room_name_updated",
+            "name": room_name.name
+        },
+        room["participants"]
+    )
+    return 

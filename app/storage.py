@@ -46,3 +46,5 @@ def is_reconnect_expired(disconnected_at: datetime) -> bool:
     elapsed = datetime.now(timezone.utc) - disconnected_at
 
     return elapsed.total_seconds() > RECONNECT_TIMEOUT_SECONDS
+
+MAX_PARTICIPANTS = 2
