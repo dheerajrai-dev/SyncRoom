@@ -1,7 +1,8 @@
+import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from ..model import chat_Message
-from ..storage import message_id, rooms , broadcast_message
+from ..storage import message_id, rooms , broadcast_message , is_reconnect_expired
 
 router = APIRouter()
 
@@ -42,35 +43,79 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         await websocket.send_text("Invalid WebSocket token")
         await websocket.close()
         return
+    
+    # Fresh connection, no previous disconnection
+    if matched_participant["disconnected_at"] is None:
+        matched_participant["websocket"] = websocket
+        matched_participant["username"] = matched_participant.get("username", "Unknown")
+        await websocket.accept()
+        participants = []
 
-    matched_participant["websocket"] = websocket
-    matched_participant["username"] = matched_participant.get("username", "Unknown")
-    await websocket.accept()
-    participants = []
+        for participant_id, participant_data in room["participants"].items():
+            participants.append({
+            "participant_id": participant_id,
+            "username": participant_data["username"]
+        })
 
-    for participant_id, participant_data in room["participants"].items():
-        participants.append({
-        "participant_id": participant_id,
-        "username": participant_data["username"]
-    })
-
-    room_state = {
-    "type": "room_state",
-    "participants": participants,
-    "messages": room["messages"]
-}
-    await websocket.send_json(room_state)
+        room_state = {
+        "type": "room_state",
+        "participants": participants,
+        "messages": room["messages"]
+    }
+        await websocket.send_json(room_state)
 
 
-    # Broadcast message to all connected participants
-    await broadcast_message(
-    {
-        "type": "participant_connected",
-        "username": matched_participant["username"]
-    },
-    room["participants"],
-    exclude_participant_id=matched_participant["participant_id"]
-)
+        # Broadcast message to all connected participants
+        await broadcast_message(
+        {
+            "type": "participant_connected",
+            "username": matched_participant["username"]
+        },
+        room["participants"],
+        exclude_participant_id=matched_participant["participant_id"]
+    )
+
+    # Reconnection scenario 
+    elif not is_reconnect_expired(matched_participant["disconnected_at"]):
+
+        matched_participant["websocket"] = websocket
+        matched_participant["disconnected_at"] = None
+
+        await websocket.accept()
+
+        participants = []
+
+        for participant_id, participant_data in room["participants"].items():
+            participants.append({
+                "participant_id": participant_id,
+                "username": participant_data["username"]
+            })
+
+        room_state = {
+            "type": "room_state",
+            "participants": participants,
+            "messages": room["messages"]
+        }
+
+        await websocket.send_json(room_state)
+
+        await broadcast_message(
+            {
+                "type": "participant_reconnected",
+                "username": matched_participant["username"]
+            },
+            room["participants"],
+            exclude_participant_id=matched_participant["participant_id"]
+        )
+
+    # Reconnection expired, treat as new connection
+    else:
+        await websocket.accept()
+        await websocket.send_text(
+            "Reconnect window expired. Please join again."
+        )
+        await websocket.close()
+        return
 
 
     try:
@@ -100,12 +145,13 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
                 await websocket.send_text("Invalid message format")
     except WebSocketDisconnect:
         matched_participant["websocket"] = None
+        matched_participant["disconnected_at"] = datetime.datetime.now(datetime.timezone.utc)
 
-        # Broadcast message to all connected participants
-        await broadcast_message({
-            "type": "participant_disconnected",
-            "username": matched_participant["username"]
-        }, 
-        room["participants"],
+        await broadcast_message(
+            {
+                "type": "participant_disconnected",
+                "username": matched_participant["username"]
+            },
+            room["participants"],
             exclude_participant_id=matched_participant["participant_id"]
         )

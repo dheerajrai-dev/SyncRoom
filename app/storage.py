@@ -1,6 +1,7 @@
 
 import secrets , string
 import uuid
+from datetime import datetime , timedelta, timezone
 
 rooms = {}
 
@@ -37,3 +38,11 @@ async def broadcast_message(
 
         if connection:
             await connection.send_json(message)
+
+RECONNECT_TIMEOUT_SECONDS = 70
+
+def is_reconnect_expired(disconnected_at: datetime) -> bool:
+
+    elapsed = datetime.now(timezone.utc) - disconnected_at
+
+    return elapsed.total_seconds() > RECONNECT_TIMEOUT_SECONDS

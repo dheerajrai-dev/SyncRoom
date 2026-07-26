@@ -40,6 +40,7 @@ def join_room(room_code: str, join_request: JoinRequest):
         "status": "pending",
         "ws_token": None,
         "websocket": None,
+        "disconnected_at": None
     }
     return JoinResponse(participant_id=pid, pending=True)
 
