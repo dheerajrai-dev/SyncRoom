@@ -1,8 +1,14 @@
-import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from ..model import DeniedRequest, chat_Message
-from ..storage import message_id, rooms , broadcast_message , is_reconnect_expired
+from ..storage import (
+    build_room_state,
+    rooms,
+    broadcast_message,
+    is_reconnect_expired,
+    process_chat_message,
+)
 
 router = APIRouter()
 
@@ -29,6 +35,41 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         await websocket.close()
         return
 
+    # connecting host
+    if room.get("host_token") == token:
+        room["host_connection"]["websocket"] = websocket
+        room["host_connection"]["disconnected_at"] = None
+        await websocket.accept()
+        await websocket.send_json(build_room_state(room))
+
+        try:
+            while True:
+                data = await websocket.receive_text()
+                try:
+                    incoming = chat_Message.model_validate_json(data)
+                    await process_chat_message(
+                        incoming.content,
+                        room,
+                        sender_id="host",
+                        username="Host",
+                    )
+                except ValidationError:
+                    await websocket.send_text("Invalid message format")
+        except WebSocketDisconnect:
+            host_connection = room["host_connection"]
+            if host_connection["websocket"] == websocket:
+                host_connection["websocket"] = None
+                host_connection["disconnected_at"] = datetime.now(timezone.utc)
+
+                await broadcast_message(
+                    {
+                        "type": "host_disconnected",
+                        "username": "Host"
+                    },
+                    room
+                )
+        return
+
     # Match participant using websocket token
     matched_participant = None
     for pid, pdata in room["participants"].items():
@@ -43,68 +84,39 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         await websocket.send_text("Invalid WebSocket token")
         await websocket.close()
         return
-    
+
     # Fresh connection, no previous disconnection
     if matched_participant["disconnected_at"] is None:
         matched_participant["websocket"] = websocket
         matched_participant["username"] = matched_participant.get("username", "Unknown")
         await websocket.accept()
-        participants = []
-
-        for participant_id, participant_data in room["participants"].items():
-            participants.append({
-            "participant_id": participant_id,
-            "username": participant_data["username"]
-        })
-
-        room_state = {
-        "type": "room_state",
-        "participants": participants,
-        "messages": room["messages"]
-    }
-        await websocket.send_json(room_state)
-
+        await websocket.send_json(build_room_state(room))
 
         # Broadcast message to all connected participants
         await broadcast_message(
-        {
-            "type": "participant_connected",
-            "username": matched_participant["username"]
-        },
-        room["participants"],
-        exclude_participant_id=matched_participant["participant_id"]
-    )
+            {
+                "type": "participant_connected",
+                "username": matched_participant["username"]
+            },
+            room,
+            exclude_participant_id=matched_participant["participant_id"]
+        )
 
-    # Reconnection scenario 
+    # Reconnection scenario
     elif not is_reconnect_expired(matched_participant["disconnected_at"]):
 
         matched_participant["websocket"] = websocket
         matched_participant["disconnected_at"] = None
 
         await websocket.accept()
-
-        participants = []
-
-        for participant_id, participant_data in room["participants"].items():
-            participants.append({
-                "participant_id": participant_id,
-                "username": participant_data["username"]
-            })
-
-        room_state = {
-            "type": "room_state",
-            "participants": participants,
-            "messages": room["messages"]
-        }
-
-        await websocket.send_json(room_state)
+        await websocket.send_json(build_room_state(room))
 
         await broadcast_message(
             {
                 "type": "participant_reconnected",
                 "username": matched_participant["username"]
             },
-            room["participants"],
+            room,
             exclude_participant_id=matched_participant["participant_id"]
         )
 
@@ -117,41 +129,28 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         await websocket.close()
         return
 
-
     try:
         while True:
             data = await websocket.receive_text()
             try:
-                incoming = chat_Message.content.model_validate_json(data)
-
-                # Store message in room history
-                message_record = {
-                    "type": "chat_message",
-                    "message_id": message_id(),
-                    "participant_id": matched_participant["participant_id"],
-                    "username": matched_participant["username"],
-                    "content": incoming.content,
-                }
-
-                room["messages"].append(message_record)
-
-                # Broadcast message to all connected participants
-                await broadcast_message(message_record, 
-                                        room["participants"],
-                                         exclude_participant_id=matched_participant["participant_id"]
-                                         )
-
+                incoming = chat_Message.model_validate_json(data)
+                await process_chat_message(
+                    incoming.content,
+                    room,
+                    sender_id=matched_participant["participant_id"],
+                    username=matched_participant["username"],
+                )
             except ValidationError:
                 await websocket.send_text("Invalid message format")
     except WebSocketDisconnect:
         matched_participant["websocket"] = None
-        matched_participant["disconnected_at"] = datetime.datetime.now(datetime.timezone.utc)
+        matched_participant["disconnected_at"] = datetime.now(timezone.utc)
 
         await broadcast_message(
             {
                 "type": "participant_disconnected",
                 "username": matched_participant["username"]
             },
-            room["participants"],
+            room,
             exclude_participant_id=matched_participant["participant_id"]
         )

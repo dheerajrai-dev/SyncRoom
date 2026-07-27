@@ -14,7 +14,12 @@ def create_room():
                          "participants": {},
                          "messages": [] ,
                          "locked": False,
-                         "name": None}
+                         "name": None ,
+                         "host_connection": {
+                             "host_id": "Host",
+                             "websocket": None ,
+                            "disconnected_at": None
+                         }}
     return Room_Code(code=room_code, host_token=host_token_value)
 
 # Get room details by room code
@@ -31,16 +36,20 @@ async def delete_room(room_code: str, room: dict = Depends(verify_host_token)):
     await broadcast_message({
         "type": "room_deleted",
         "message": "Room has been deleted by the host"
-    }, room["participants"])
+    }, room)
 
     # Close all participant websockets
     for participant in room["participants"].values():
         if participant["websocket"] is not None:
             await participant["websocket"].close()
 
+    host_connection = room.get("host_connection")
+    if host_connection and host_connection.get("websocket") is not None:
+        await host_connection["websocket"].close()
+
     del rooms[room_code]
-    return 
-    
+    return
+
 
 # Participant requests to join a room
 @router.post("/rooms/{room_code}/join", response_model=JoinResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -139,14 +148,10 @@ async def kick_participant(room_code: str, kick_request: DeniedRequest, room: di
     if participant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
 
-    # Remove participant from the room
-    if participant["websocket"] is not None :
+    # If they're currently connected, notify and close the socket first
+    if participant["websocket"] is not None:
         await participant["websocket"].send_text("You have been kicked from the room")
-        participant["ws_token"] = None
-        participant["status"] = "kicked"
         await participant["websocket"].close()
-        participant["websocket"] = None
-        participant["disconnected_at"] = None
 
         # Broadcast message to all connected participants
         await broadcast_message(
@@ -154,11 +159,13 @@ async def kick_participant(room_code: str, kick_request: DeniedRequest, room: di
                         "type": "participant_kicked",
                         "username": participant["username"]
                     },
-                    room["participants"],
+                    room,
                     exclude_participant_id=participant["participant_id"]
             )
 
-    participant["ws_token"] = None 
+    participant["websocket"] = None
+    participant["disconnected_at"] = None
+    participant["ws_token"] = None
     participant["status"] = "kicked"
     return {"message": f"{participant['username']} kicked successfully"}
 
@@ -177,12 +184,12 @@ def unlock_room(room_code: str, room: dict = Depends(verify_host_token)):
 # Set the name of the room
 @router.patch("/rooms/{room_code}/rename")
 async def set_room_name(room_code: str, room_name: RoomName, room: dict = Depends(verify_host_token)):
-    room["Name"] = room_name.name
+    room["name"] = room_name.name
     await broadcast_message(
         {
             "type": "room_name_updated",
             "name": room_name.name
         },
-        room["participants"]
+        room
     )
-    return 
+    return
