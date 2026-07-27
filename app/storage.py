@@ -1,6 +1,6 @@
 import secrets , string
-import uuid
-from datetime import datetime , timedelta, timezone
+import uuid , asyncio
+from datetime import datetime ,  timezone
 
 rooms = {}
 
@@ -98,3 +98,51 @@ def is_reconnect_expired(disconnected_at: datetime) -> bool:
     return elapsed.total_seconds() > RECONNECT_TIMEOUT_SECONDS
 
 MAX_PARTICIPANTS = 10
+
+async def close_and_delete_room(room_code: str):
+    room = rooms.get(room_code)
+
+    if not room:
+        return
+
+    await broadcast_message({
+            "type": "room_deleted",
+            "message": "Room has been deleted by the host"
+        }, room)
+
+    # Close all participant websockets
+    for pid, participant in room["participants"].items():
+        connection = participant.get("websocket")
+        if connection:
+            await connection.close()
+
+    # Close host websocket
+    host_connection = room.get("host_connection")
+    if host_connection:
+        host_websocket = host_connection.get("websocket")
+        if host_websocket:
+            await host_websocket.close()
+
+    # Remove the room from the global dictionary
+    del rooms[room_code]
+
+HOST_RECONNECT_GRACE_PERIOD_SECONDS = 300
+async def host_grace_timer(room_code: str, disconnected_at: datetime):
+    await asyncio.sleep(HOST_RECONNECT_GRACE_PERIOD_SECONDS)
+
+    room = rooms.get(room_code)
+    if room is None:
+        return
+
+    current_disconnect = room["host_connection"]["disconnected_at"]
+
+    # Host reconnected
+    if current_disconnect is None:
+        return
+
+    # A newer disconnect happened, so this timer is stale
+    if current_disconnect != disconnected_at:
+        return
+
+    # This timer still belongs to the current disconnect
+    await close_and_delete_room(room_code)

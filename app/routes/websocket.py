@@ -1,9 +1,12 @@
+import asyncio
 from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
-from ..model import DeniedRequest, chat_Message
+from ..model import  chat_Message
 from ..storage import (
     build_room_state,
+    host_grace_timer,
+    host_grace_timer,
     rooms,
     broadcast_message,
     is_reconnect_expired,
@@ -11,17 +14,6 @@ from ..storage import (
 )
 
 router = APIRouter()
-
-# Simple echo websocket for testing
-@router.websocket("/ws/echos")
-async def websocket_echo(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        while True:
-            data = await websocket.receive_text()
-            await websocket.send_text(f"Message text was: {data}")
-    except WebSocketDisconnect:
-        print("Client disconnected")
 
 # WebSocket connection for a specific room
 @router.websocket("/ws/rooms/{room_code}")
@@ -55,11 +47,14 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
                     )
                 except ValidationError:
                     await websocket.send_text("Invalid message format")
+
         except WebSocketDisconnect:
             host_connection = room["host_connection"]
             if host_connection["websocket"] == websocket:
                 host_connection["websocket"] = None
-                host_connection["disconnected_at"] = datetime.now(timezone.utc)
+                disconnect_time = datetime.now(timezone.utc)
+                host_connection["disconnected_at"] = disconnect_time
+                asyncio.create_task(host_grace_timer(room_code, disconnect_time))
 
                 await broadcast_message(
                     {

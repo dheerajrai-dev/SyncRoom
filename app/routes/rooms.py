@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_host_token
 from ..model import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code , RoomName
-from ..storage import MAX_PARTICIPANTS, broadcast_message, generate_code, host_token , participant_id, rooms, ws_token
+from ..storage import MAX_PARTICIPANTS, broadcast_message, close_and_delete_room, generate_code, host_token , participant_id, rooms, ws_token
 
 router = APIRouter()
 
@@ -33,21 +33,7 @@ def get_room(room_code: str):
 # Delete a room after host token verification
 @router.delete("/rooms/{room_code}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_room(room_code: str, room: dict = Depends(verify_host_token)):
-    await broadcast_message({
-        "type": "room_deleted",
-        "message": "Room has been deleted by the host"
-    }, room)
-
-    # Close all participant websockets
-    for participant in room["participants"].values():
-        if participant["websocket"] is not None:
-            await participant["websocket"].close()
-
-    host_connection = room.get("host_connection")
-    if host_connection and host_connection.get("websocket") is not None:
-        await host_connection["websocket"].close()
-
-    del rooms[room_code]
+    await close_and_delete_room(room_code)
     return
 
 
