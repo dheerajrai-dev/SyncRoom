@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
-from ..model import  chat_Message
+from ..schemas import  chat_Message
 from ..storage import (
     build_room_state,
     host_grace_timer,

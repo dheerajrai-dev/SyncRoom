@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_host_token
-from ..model import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code , RoomName
+from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code , RoomName
 from ..storage import MAX_PARTICIPANTS, broadcast_message, close_and_delete_room, generate_code, host_token , participant_id, rooms, ws_token
 
 router = APIRouter()

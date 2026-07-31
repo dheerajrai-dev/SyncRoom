@@ -1,3 +1,9 @@
+"""
+Schemas for request and response bodies.
+pydantic models are used to validate and serialize data.
+
+"""
+
 from pydantic import BaseModel
 
 class Room_Code(BaseModel):
