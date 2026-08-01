@@ -6,7 +6,7 @@ SQLAlchemy models are used to define the database schema and interact with the d
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Text, text
+from sqlalchemy import DateTime, ForeignKey, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -21,16 +21,33 @@ class Room(Base):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
-    room_code: Mapped[str] = mapped_column(Text, unique=True)
-    name: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=text("now()")
+
+    room_code: Mapped[str] = mapped_column(
+        Text,
+        unique=True,
+        nullable=False,
     )
-    archived_at: Mapped[datetime | None]
+
+    name: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("now()"),
+        nullable=False,
+    )
+
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     participants: Mapped[list["Participant"]] = relationship(
         back_populates="room"
     )
+
     messages: Mapped[list["Message"]] = relationship(
         back_populates="room"
     )
@@ -43,16 +60,32 @@ class Participant(Base):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
+
     room_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("rooms.id", ondelete="CASCADE")
+        ForeignKey("rooms.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    nickname: Mapped[str] = mapped_column(Text)
+
+    nickname: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
     role: Mapped[str] = mapped_column(
         Text,
-        server_default="participant",
+        server_default=text("'participant'"),
+        nullable=False,
     )
+
     joined_at: Mapped[datetime] = mapped_column(
-        server_default=text("now()")
+        DateTime(timezone=True),
+        server_default=text("now()"),
+        nullable=False,
+    )
+
+    left_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     room: Mapped["Room"] = relationship(
@@ -67,16 +100,31 @@ class Message(Base):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
+
     room_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("rooms.id", ondelete="CASCADE")
+        ForeignKey("rooms.id", ondelete="CASCADE"),
+        nullable=False,
     )
+
     participant_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("participants.id", ondelete="SET NULL")
+        ForeignKey("participants.id", ondelete="SET NULL"),
+        nullable=True,
     )
-    nickname: Mapped[str] = mapped_column(Text)
-    content: Mapped[str] = mapped_column(Text)
+
+    nickname: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
     sent_at: Mapped[datetime] = mapped_column(
-        server_default=text("now()")
+        DateTime(timezone=True),
+        server_default=text("now()"),
+        nullable=False,
     )
 
     room: Mapped["Room"] = relationship(
