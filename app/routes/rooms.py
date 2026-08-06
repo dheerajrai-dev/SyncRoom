@@ -1,15 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from ..dependencies import verify_host_token
-from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, Room_Code , RoomName
+from ..db.room_repository import create_room_row, get_room_by_code
+from ..db.session import get_db
+from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName
+from ..security import hash_token
 from ..storage import MAX_PARTICIPANTS, broadcast_message, close_and_delete_room, generate_code, host_token , participant_id, rooms, ws_token
 
 router = APIRouter()
 
 # Create a new room and return its code + host token
 @router.post("/rooms", response_model=Room_Code, status_code=status.HTTP_201_CREATED)
-def create_room():
-    room_code = generate_code()
+async def create_room(db: AsyncSession = Depends(get_db)):
     host_token_value = host_token()
+    host_token_hash = hash_token(host_token_value)
+    for _ in range(5):
+        room_code = generate_code()
+        if await create_room_row(db, room_code, host_token_hash):
+            break
+    else:
+        raise HTTPException(status_code=500, detail="Could not generate a unique room code, please try again")
+
     rooms[room_code] = {"host_token": host_token_value,
                          "participants": {},
                          "messages": [] ,
@@ -23,12 +34,12 @@ def create_room():
     return Room_Code(code=room_code, host_token=host_token_value)
 
 # Get room details by room code
-@router.get("/rooms/{room_code}", response_model=Room_Code)
-def get_room(room_code: str):
-    room = rooms.get(room_code)
-    if room is None:
+@router.get("/rooms/{room_code}", response_model=RoomInfo)
+async def get_room(room_code: str, db: AsyncSession = Depends(get_db)):
+    db_room = await get_room_by_code(db, room_code)
+    if db_room is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
-    return Room_Code(code=room_code, host_token=room["host_token"])
+    return RoomInfo(code=db_room.room_code, name=db_room.name, locked=db_room.locked)
 
 # Delete a room after host token verification
 @router.delete("/rooms/{room_code}", status_code=status.HTTP_204_NO_CONTENT)

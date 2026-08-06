@@ -10,6 +10,12 @@ class Room_Code(BaseModel):
     code: str
     host_token: str
 
+
+class RoomInfo(BaseModel):
+    code: str
+    name: str | None
+    locked: bool
+
 class JoinRequest(BaseModel):
     username: str
 

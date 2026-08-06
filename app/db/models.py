@@ -17,116 +17,54 @@ class Base(DeclarativeBase):
 class Room(Base):
     __tablename__ = "rooms"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=text("gen_random_uuid()"))
 
-    room_code: Mapped[str] = mapped_column(
-        Text,
-        unique=True,
-        nullable=False,
-    )
+    room_code: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
 
-    name: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=text("now()"),
-        nullable=False,
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
 
-    archived_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
+    locked: Mapped[bool] = mapped_column(server_default=text("false"), nullable=False)
 
-    participants: Mapped[list["Participant"]] = relationship(
-        back_populates="room"
-    )
+    host_token_hash: Mapped[str] = mapped_column(Text, nullable=False)
 
-    messages: Mapped[list["Message"]] = relationship(
-        back_populates="room"
-    )
+    participants: Mapped[list["Participant"]] = relationship(back_populates="room")
+
+    messages: Mapped[list["Message"]] = relationship(back_populates="room")
 
 
 class Participant(Base):
     __tablename__ = "participants"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=text("gen_random_uuid()"))
 
-    room_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("rooms.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+    room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
 
-    nickname: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
+    nickname: Mapped[str] = mapped_column(Text, nullable=False)
 
-    role: Mapped[str] = mapped_column(
-        Text,
-        server_default=text("'participant'"),
-        nullable=False,
-    )
+    role: Mapped[str] = mapped_column(Text, server_default=text("'participant'"), nullable=False)
 
-    joined_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=text("now()"),
-        nullable=False,
-    )
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
 
-    left_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
+    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    room: Mapped["Room"] = relationship(
-        back_populates="participants"
-    )
+    room: Mapped["Room"] = relationship(back_populates="participants")
 
 
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=text("gen_random_uuid()"))
 
-    room_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("rooms.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+    room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
 
-    participant_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("participants.id", ondelete="SET NULL"),
-        nullable=True,
-    )
+    participant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("participants.id", ondelete="SET NULL"), nullable=True)
 
-    nickname: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
+    nickname: Mapped[str] = mapped_column(Text, nullable=False)
 
-    content: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    sent_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=text("now()"),
-        nullable=False,
-    )
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
 
-    room: Mapped["Room"] = relationship(
-        back_populates="messages"
-    )
+    room: Mapped["Room"] = relationship(back_populates="messages")
