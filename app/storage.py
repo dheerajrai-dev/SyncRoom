@@ -2,6 +2,8 @@ import secrets , string
 import uuid , asyncio
 from datetime import datetime ,  timezone
 
+from .db.room_repository import delete_room_row
+
 rooms = {}
 
 def generate_code(length: int = 6):
@@ -122,6 +124,8 @@ async def close_and_delete_room(room_code: str):
         host_websocket = host_connection.get("websocket")
         if host_websocket:
             await host_websocket.close()
+
+    await delete_room_row(room_code)
 
     # Remove the room from the global dictionary
     del rooms[room_code]

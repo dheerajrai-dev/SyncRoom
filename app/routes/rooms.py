@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime, timezone
 from ..dependencies import verify_host_token
-from ..db.room_repository import create_room_row, get_room_by_code
+from ..db.room_repository import create_room_row, get_room_by_code, update_room_locked, update_room_name
 from ..db.session import get_db
 from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName
 from ..security import hash_token
@@ -21,14 +22,13 @@ async def create_room(db: AsyncSession = Depends(get_db)):
     else:
         raise HTTPException(status_code=500, detail="Could not generate a unique room code, please try again")
 
-    rooms[room_code] = {"host_token": host_token_value,
+    rooms[room_code] = {
                          "participants": {},
-                         "messages": [] ,
-                         "locked": False,
-                         "name": None ,
+                         "messages": [],
+                         "created_at": datetime.now(timezone.utc),
                          "host_connection": {
                              "host_id": "Host",
-                             "websocket": None ,
+                             "websocket": None,
                             "disconnected_at": None
                          }}
     return Room_Code(code=room_code, host_token=host_token_value)
@@ -43,19 +43,25 @@ async def get_room(room_code: str, db: AsyncSession = Depends(get_db)):
 
 # Delete a room after host token verification
 @router.delete("/rooms/{room_code}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_room(room_code: str, room: dict = Depends(verify_host_token)):
+async def delete_room(room_code: str, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
+    db_room = await get_room_by_code(db, room_code)
+    room_name = db_room.name if db_room else None
+    _ = room_name
     await close_and_delete_room(room_code)
     return
 
 
 # Participant requests to join a room
 @router.post("/rooms/{room_code}/join", response_model=JoinResponse, status_code=status.HTTP_202_ACCEPTED)
-def join_room(room_code: str, join_request: JoinRequest):
+async def join_room(room_code: str, join_request: JoinRequest, db: AsyncSession = Depends(get_db)):
     room = rooms.get(room_code)
     if room is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
 
-    if room["locked"]:
+    db_room = await get_room_by_code(db, room_code)
+    if db_room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    if db_room.locked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Room is locked to new participants")
 
     active_participants = sum(
@@ -168,20 +174,20 @@ async def kick_participant(room_code: str, kick_request: DeniedRequest, room: di
 
 # locked the room for new participants
 @router.post("/rooms/{room_code}/lock")
-def lock_room(room_code: str, room: dict = Depends(verify_host_token)):
-    room["locked"] = True
+async def lock_room(room_code: str, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
+    await update_room_locked(db, room_code, True)
     return {"message": "Room locked successfully"}
 
 # unlocked the room for new participants
 @router.post("/rooms/{room_code}/unlock")
-def unlock_room(room_code: str, room: dict = Depends(verify_host_token)):
-    room["locked"] = False
+async def unlock_room(room_code: str, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
+    await update_room_locked(db, room_code, False)
     return {"message": "Room unlocked successfully"}
 
 # Set the name of the room
 @router.patch("/rooms/{room_code}/rename")
-async def set_room_name(room_code: str, room_name: RoomName, room: dict = Depends(verify_host_token)):
-    room["name"] = room_name.name
+async def set_room_name(room_code: str, room_name: RoomName, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
+    await update_room_name(db, room_code, room_name.name)
     await broadcast_message(
         {
             "type": "room_name_updated",
