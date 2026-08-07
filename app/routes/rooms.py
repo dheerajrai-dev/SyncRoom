@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from ..dependencies import verify_host_token
+from ..db.participant_repository import create_participant_row, mark_participant_left
 from ..db.room_repository import create_room_row, get_room_by_code, update_room_locked, update_room_name
 from ..db.session import get_db
 from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName
@@ -22,6 +23,9 @@ async def create_room(db: AsyncSession = Depends(get_db)):
     else:
         raise HTTPException(status_code=500, detail="Could not generate a unique room code, please try again")
 
+    db_room = await get_room_by_code(db, room_code)
+    db_host_participant = await create_participant_row(db, db_room.id, "Host", role="host")
+
     rooms[room_code] = {
                          "participants": {},
                          "messages": [],
@@ -29,7 +33,8 @@ async def create_room(db: AsyncSession = Depends(get_db)):
                          "host_connection": {
                              "host_id": "Host",
                              "websocket": None,
-                            "disconnected_at": None
+                            "disconnected_at": None,
+                             "db_id": db_host_participant.id,
                          }}
     return Room_Code(code=room_code, host_token=host_token_value)
 
@@ -98,13 +103,17 @@ def get_participants(room_code: str, room: dict = Depends(verify_host_token)):
 
 # Host approves a participant and assigns websocket token
 @router.post("/rooms/{room_code}/approve")
-def approve_participant(room_code: str, approve_request: ApproveRequest, room: dict = Depends(verify_host_token)):
+async def approve_participant(room_code: str, approve_request: ApproveRequest, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
     participant = room["participants"].get(approve_request.participant_id)
     if participant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
 
     participant["status"] = "approved"
     participant["ws_token"] = ws_token()
+
+    db_room = await get_room_by_code(db, room_code)
+    db_participant = await create_participant_row(db, db_room.id, participant["username"])
+    participant["db_id"] = db_participant.id
 
     return {
         "message": "Participant approved successfully",
@@ -146,7 +155,7 @@ def get_messages(room_code: str, room: dict = Depends(verify_host_token)):
 
 # host kicks a participant from the room
 @router.post("/rooms/{room_code}/kick")
-async def kick_participant(room_code: str, kick_request: DeniedRequest, room: dict = Depends(verify_host_token)):
+async def kick_participant(room_code: str, kick_request: DeniedRequest, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
     participant = room["participants"].get(kick_request.participant_id)
     if participant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
@@ -165,6 +174,9 @@ async def kick_participant(room_code: str, kick_request: DeniedRequest, room: di
                     room,
                     exclude_participant_id=participant["participant_id"]
             )
+
+    if participant.get("db_id"):
+        await mark_participant_left(db, participant["db_id"])
 
     participant["websocket"] = None
     participant["disconnected_at"] = None
