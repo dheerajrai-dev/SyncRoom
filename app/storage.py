@@ -3,6 +3,8 @@ import uuid , asyncio
 from datetime import datetime ,  timezone
 
 from .db.room_repository import delete_room_row
+from .db.message_repository import create_message_row, get_messages_for_room
+from .db.session import AsyncSessionLocal
 
 rooms = {}
 
@@ -22,22 +24,39 @@ def ws_token():
     ws_token = secrets.token_urlsafe(16)
     return ws_token
 
-def message_id():
-    return str(uuid.uuid4())
+def gather_export_data(room_code: str, room: dict, room_name: str | None, db_messages: list) -> dict:
+    participants = ["Host"]
+    participants += [
+        p["username"] for p in room["participants"].values()
+        if p["status"] == "approved"
+    ]
+    return {
+        "room_name": room_name or room_code,
+        "participants": participants,
+        "messages": [
+            {"time": m.sent_at.isoformat(), "username": m.nickname, "content": m.content}
+            for m in db_messages
+        ],
+    }
 
-def build_room_state(room: dict) -> dict:
+async def build_room_state(room: dict) -> dict:
     participants = []
-
     for pid, participant_data in room["participants"].items():
         participants.append({
             "participant_id": pid,
             "username": participant_data["username"]
         })
 
+    async with AsyncSessionLocal() as session:
+        db_messages = await get_messages_for_room(session, room["db_id"])
+
     return {
         "type": "room_state",
         "participants": participants,
-        "messages": room["messages"]
+        "messages": [
+            {"username": m.nickname, "content": m.content, "sent_at": m.sent_at.isoformat()}
+            for m in db_messages
+        ]
     }
 
 async def broadcast_message(
@@ -67,27 +86,20 @@ async def process_chat_message(
     room: dict,
     sender_id: str,
     username: str,
+    participant_db_id,
 ):
-    """
-    Build, store, and broadcast a chat message.
-    Used by both the participant and host websocket loops.
-    """
+    db_message = await create_message_row(room["db_id"], participant_db_id, username, content)
+
     message_record = {
         "type": "chat_message",
-        "message_id": message_id(),
+        "message_id": str(db_message.id),
         "participant_id": sender_id,
         "username": username,
         "content": content,
+        "sent_at": db_message.sent_at.isoformat(),
     }
 
-    room["messages"].append(message_record)
-
-    await broadcast_message(
-        message_record,
-        room,
-        exclude_participant_id=sender_id
-    )
-
+    await broadcast_message(message_record, room, exclude_participant_id=sender_id)
     return 
 
 

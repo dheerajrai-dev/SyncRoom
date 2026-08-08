@@ -35,3 +35,7 @@ class chat_Message(BaseModel):
 
 class RoomName(BaseModel):
     name: str
+
+class DeleteRoomRequest(BaseModel):
+    export: bool = False
+    format: str = "json"

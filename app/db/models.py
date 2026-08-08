@@ -6,7 +6,7 @@ SQLAlchemy models are used to define the database schema and interact with the d
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Text, text
+from sqlalchemy import DateTime, ForeignKey, Text, text, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -54,6 +54,8 @@ class Participant(Base):
 
 class Message(Base):
     __tablename__ = "messages"
+
+    __table_args__ = (Index("ix_messages_room_id_sent_at", "room_id", "sent_at"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=text("gen_random_uuid()"))
 

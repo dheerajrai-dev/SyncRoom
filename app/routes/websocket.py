@@ -32,7 +32,8 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         room["host_connection"]["websocket"] = websocket
         room["host_connection"]["disconnected_at"] = None
         await websocket.accept()
-        await websocket.send_json(build_room_state(room))
+        room_state = await build_room_state(room)
+        await websocket.send_json(room_state)
 
         try:
             while True:
@@ -44,6 +45,7 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
                         room,
                         sender_id="host",
                         username="Host",
+                        participant_db_id=room["host_connection"]["db_id"],
                     )
                 except ValidationError:
                     await websocket.send_text("Invalid message format")
@@ -85,7 +87,8 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         matched_participant["websocket"] = websocket
         matched_participant["username"] = matched_participant.get("username", "Unknown")
         await websocket.accept()
-        await websocket.send_json(build_room_state(room))
+        room_state = await build_room_state(room)
+        await websocket.send_json(room_state)
 
         # Broadcast message to all connected participants
         await broadcast_message(
@@ -104,7 +107,8 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
         matched_participant["disconnected_at"] = None
 
         await websocket.accept()
-        await websocket.send_json(build_room_state(room))
+        room_state = await build_room_state(room)
+        await websocket.send_json(room_state)
 
         await broadcast_message(
             {
@@ -134,6 +138,7 @@ async def websocket_room(websocket: WebSocket, room_code: str, token: str):
                     room,
                     sender_id=matched_participant["participant_id"],
                     username=matched_participant["username"],
+                    participant_db_id=matched_participant["db_id"],
                 )
             except ValidationError:
                 await websocket.send_text("Invalid message format")

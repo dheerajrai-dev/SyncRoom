@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from ..dependencies import verify_host_token
 from ..db.participant_repository import create_participant_row, mark_participant_left
 from ..db.room_repository import create_room_row, get_room_by_code, update_room_locked, update_room_name
+from ..db.message_repository import get_messages_for_room
 from ..db.session import get_db
-from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName
+from ..schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName, DeleteRoomRequest
 from ..security import hash_token
-from ..storage import MAX_PARTICIPANTS, broadcast_message, close_and_delete_room, generate_code, host_token , participant_id, rooms, ws_token
+from ..storage import MAX_PARTICIPANTS, broadcast_message, close_and_delete_room, generate_code, host_token , participant_id, rooms, ws_token, gather_export_data
 
 router = APIRouter()
 
@@ -27,8 +29,8 @@ async def create_room(db: AsyncSession = Depends(get_db)):
     db_host_participant = await create_participant_row(db, db_room.id, "Host", role="host")
 
     rooms[room_code] = {
+                         "db_id": db_room.id,
                          "participants": {},
-                         "messages": [],
                          "created_at": datetime.now(timezone.utc),
                          "host_connection": {
                              "host_id": "Host",
@@ -47,13 +49,32 @@ async def get_room(room_code: str, db: AsyncSession = Depends(get_db)):
     return RoomInfo(code=db_room.room_code, name=db_room.name, locked=db_room.locked)
 
 # Delete a room after host token verification
-@router.delete("/rooms/{room_code}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_room(room_code: str, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
+@router.delete("/rooms/{room_code}")
+async def delete_room(
+    room_code: str, 
+    delete_request: DeleteRoomRequest | None = None,
+    db: AsyncSession = Depends(get_db), 
+    room: dict = Depends(verify_host_token)
+):
     db_room = await get_room_by_code(db, room_code)
     room_name = db_room.name if db_room else None
-    _ = room_name
+    
+    export_data = None
+    if delete_request and delete_request.export:
+        db_messages = await get_messages_for_room(db, db_room.id) if db_room else []
+        export_data = gather_export_data(room_code, room, room_name, db_messages)
+
     await close_and_delete_room(room_code)
-    return
+    
+    if export_data:
+        if delete_request.format == "txt":
+            lines = [f"Room: {export_data['room_name']}", "Participants: " + ", ".join(export_data['participants']), ""]
+            for m in export_data['messages']:
+                lines.append(f"[{m['time']}] {m['username']}: {m['content']}")
+            return PlainTextResponse("\n".join(lines))
+        return JSONResponse(export_data)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # Participant requests to join a room
@@ -149,8 +170,15 @@ def check_join_status(room_code: str, participant_id: str):
 
 # Host gets all stored messages in the room
 @router.get("/rooms/{room_code}/messages")
-def get_messages(room_code: str, room: dict = Depends(verify_host_token)):
-    return {"messages": room["messages"]}
+async def get_messages(room_code: str, db: AsyncSession = Depends(get_db), room: dict = Depends(verify_host_token)):
+    db_room = await get_room_by_code(db, room_code)
+    db_messages = await get_messages_for_room(db, db_room.id)
+    return {
+        "messages": [
+            {"username": m.nickname, "content": m.content, "sent_at": m.sent_at.isoformat()}
+            for m in db_messages
+        ]
+    }
 
 
 # host kicks a participant from the room
