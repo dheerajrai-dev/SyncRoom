@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
-from app.db.models import Message
+from app.models import Message
 
 
 async def create_message_row(room_id, participant_id, nickname: str, content: str) -> Message:

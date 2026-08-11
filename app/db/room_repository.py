@@ -2,12 +2,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Room
+from app.models import Room
 from app.db.session import AsyncSessionLocal
 
 
-async def create_room_row(db: AsyncSession, room_code: str, host_token_hash: str) -> bool:
-    db.add(Room(room_code=room_code, host_token_hash=host_token_hash))
+async def create_room_row(db: AsyncSession, room_code: str, host_token_hash: str, owner_user_id: str | None = None, room_name: str | None = None) -> bool:
+    db.add(Room(room_code=room_code, host_token_hash=host_token_hash, owner_user_id=owner_user_id, room_name=room_name))
     try:
         await db.commit()
         return True
@@ -18,6 +18,10 @@ async def create_room_row(db: AsyncSession, room_code: str, host_token_hash: str
 
 async def get_room_by_code(db: AsyncSession, room_code: str) -> Room | None:
     result = await db.execute(select(Room).where(Room.room_code == room_code))
+    return result.scalar_one_or_none()
+
+async def get_room_by_id(db: AsyncSession, room_id: str) -> Room | None:
+    result = await db.execute(select(Room).where(Room.id == room_id))
     return result.scalar_one_or_none()
 
 
@@ -33,7 +37,14 @@ async def update_room_name(db: AsyncSession, room_code: str, name: str) -> None:
     db_room = await get_room_by_code(db, room_code)
     if db_room is None:
         return
-    db_room.name = name
+    db_room.room_name = name
+    await db.commit()
+
+async def update_room_status(db: AsyncSession, room_code: str, status: str) -> None:
+    db_room = await get_room_by_code(db, room_code)
+    if db_room is None:
+        return
+    db_room.status = status
     await db.commit()
 
 
@@ -44,3 +55,7 @@ async def delete_room_row(room_code: str) -> None:
             return
         await session.delete(db_room)
         await session.commit()
+
+async def get_hashed_token(db: AsyncSession, room_code: str):
+    hashed_host_token = await db.execute(select(Room.host_token_hash).where(Room.room_code == room_code))
+    return hashed_host_token.scalar_one_or_none()
