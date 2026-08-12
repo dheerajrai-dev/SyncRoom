@@ -1,0 +1,36 @@
+:root {
+  /* Colors - Ephemeral Minimalism Foundation */
+  --color-primary: #004ac6; /* Inspired by Signal's blue accents */
+  --color-secondary: #515f74;
+  --color-tertiary: #824500;
+  --color-error: #ba1a1a;
+  
+  --color-background: #f7f9fb; /* Calm grayscale */
+  --color-surface-container-lowest: #ffffff; /* Clean white cards/modals */
+  
+  --color-outline-variant: #c3c6d7; /* Hairline borders */
+  
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #434655;
+
+  /* Typography */
+  --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Spacing Rhythm (8px base) */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-48: 48px;
+
+  /* Border Radius */
+  --radius-sm: 4px; /* Small components like inputs, chips */
+  --radius-md: 8px; /* Cards, larger containers */
+  --radius-lg: 16px; /* Inspired by Discord/Signal panel radius */
+
+  /* Elevation */
+  --shadow-modal: 0px 4px 20px rgba(0, 0, 0, 0.04);
+}
