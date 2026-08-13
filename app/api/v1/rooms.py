@@ -86,6 +86,12 @@ async def join_room(room_code: str, join_request: JoinRequest, db: AsyncSession 
     req_id = participant_id()
     manager.add_pending_request(room_code, req_id, join_request.username)
     
+    await manager.broadcast_to_room(room_code, {
+        "type": "join_request",
+        "participant_id": req_id,
+        "nickname": join_request.username
+    })
+    
     return JoinResponse(participant_id=req_id, pending=True)
 
 @router.get("/rooms/{room_code}/participants")
@@ -116,11 +122,17 @@ async def approve_participant(room_code: str, approve_request: ApproveRequest, d
     new_ws_token = ws_token()
     manager.pre_register_connection(str(db_participant.id), room_code, new_ws_token)
     
-    manager.pending_requests[room_code][approve_request.participant_id] = {
+    manager.pending_requests[room_code.upper()][approve_request.participant_id] = {
         "status": "approved",
         "ws_token": new_ws_token,
         "real_id": str(db_participant.id)
     }
+
+    # Immediately broadcast to host that participant is approved, removing from pending
+    await manager.broadcast_to_room(room_code, {
+        "type": "participant_approved",
+        "participant_id": approve_request.participant_id
+    })
 
     return {
         "message": "Participant approved successfully",
@@ -129,12 +141,19 @@ async def approve_participant(room_code: str, approve_request: ApproveRequest, d
     }
 
 @router.post("/rooms/{room_code}/deny")
-def denied_participant(room_code: str, denied_request: DeniedRequest, db_room = Depends(verify_host_token)):
+async def denied_participant(room_code: str, denied_request: DeniedRequest, db_room = Depends(verify_host_token)):
     req = manager.get_pending_request(room_code, denied_request.participant_id)
     if not req:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
         
-    manager.pending_requests[room_code][denied_request.participant_id] = {"status": "denied"}
+    manager.pending_requests[room_code.upper()][denied_request.participant_id] = {"status": "denied"}
+    
+    # Broadcast to room to immediately update host UI
+    await manager.broadcast_to_room(room_code, {
+        "type": "participant_denied",
+        "participant_id": denied_request.participant_id
+    })
+    
     return {"message": "Participant denied successfully", "participant_id": denied_request.participant_id}
 
 @router.get("/rooms/{room_code}/join/{participant_id}/status")
@@ -174,12 +193,15 @@ async def kick_participant(room_code: str, kick_request: DeniedRequest, db: Asyn
     
     conn = manager.get_connection(kick_request.participant_id)
     if conn and conn["websocket"]:
-        await conn["websocket"].send_text("You have been kicked from the room")
-        await conn["websocket"].close()
+        try:
+            await conn["websocket"].send_json({"type": "room_deleted", "message": "You have been kicked from the room"})
+            await conn["websocket"].close()
+        except Exception:
+            pass
         
     await manager.broadcast_to_room(
         room_code, 
-        {"type": "participant_kicked", "username": "Participant"}, 
+        {"type": "participant_kicked", "participant_id": kick_request.participant_id, "username": "Participant"}, 
         exclude_participant_id=kick_request.participant_id
     )
 

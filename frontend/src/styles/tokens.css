@@ -1,23 +1,36 @@
 :root {
-  /* Colors - Ephemeral Minimalism Foundation */
-  --color-primary: #004ac6; /* Inspired by Signal's blue accents */
-  --color-secondary: #515f74;
-  --color-tertiary: #824500;
+  /* Colors - Light Glassmorphism */
+  --color-background: #f0f4f8; /* Soft light grey/blue */
+  
+  --color-primary: #004ac6; /* Trust Blue */
+  --color-primary-hover: #003ea8;
+  --color-primary-container: #dbe1ff;
+  --color-on-primary-container: #00174b;
+  
+  --color-secondary: #515f74; /* Slate */
+  --color-tertiary: #a65900;
   --color-error: #ba1a1a;
+  --color-success: #1a8f4c;
   
-  --color-background: #f7f9fb; /* Calm grayscale */
-  --color-surface-container-lowest: #ffffff; /* Clean white cards/modals */
-  
-  --color-outline-variant: #c3c6d7; /* Hairline borders */
+  --color-outline: #737686;
+  --color-outline-variant: #c3c6d7;
   
   --color-on-surface: #191c1e;
   --color-on-surface-variant: #434655;
 
+  /* Glassmorphism Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-hover: rgba(255, 255, 255, 0.85);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  --glass-blur: blur(16px);
+
   /* Typography */
   --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: 'Inter', sans-serif;
 
-  /* Spacing Rhythm (8px base) */
+  /* Spacing Rhythm (4px base) */
   --spacing-4: 4px;
   --spacing-8: 8px;
   --spacing-12: 12px;
@@ -25,12 +38,92 @@
   --spacing-24: 24px;
   --spacing-32: 32px;
   --spacing-48: 48px;
+  --spacing-64: 64px;
 
   /* Border Radius */
-  --radius-sm: 4px; /* Small components like inputs, chips */
-  --radius-md: 8px; /* Cards, larger containers */
-  --radius-lg: 16px; /* Inspired by Discord/Signal panel radius */
+  --radius-sm: 8px;
+  --radius-button: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
 
   /* Elevation */
-  --shadow-modal: 0px 4px 20px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.1);
+  
+  /* Motion Tokens */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-moderate: 300ms;
+  --duration-exit: 150ms;
+  
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-delight: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 100ms;
+    --duration-fast: 100ms;
+    --duration-base: 100ms;
+    --duration-moderate: 100ms;
+    --duration-exit: 100ms;
+    
+    --ease-standard: linear;
+    --ease-exit: linear;
+    --ease-delight: linear;
+  }
+}
+
+body {
+  background-color: var(--color-background);
+  background-image: radial-gradient(at 0% 0%, rgba(219, 225, 255, 0.5) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(255, 220, 195, 0.4) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-on-surface);
+  font-family: var(--font-inter);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-on-surface);
+}
+
+button {
+  font-family: var(--font-inter);
+  font-weight: 500;
+  border-radius: var(--radius-button);
+  transition: transform var(--duration-instant) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+input {
+  background: var(--glass-bg);
+  color: var(--color-on-surface);
+  border: var(--glass-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  backdrop-filter: var(--glass-blur);
+}
+
+input:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-container);
+}
+
+/* Glassmorphism utility classes for inline styles */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }

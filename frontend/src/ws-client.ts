@@ -13,10 +13,8 @@ export class WsClient {
 
   constructor(roomId: string, token: string) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // In dev mode, Vite runs on different port, but assuming proxy or direct url:
-    // If backend is on 8000:
-    const backendHost = import.meta.env.VITE_BACKEND_URL ? new URL(import.meta.env.VITE_BACKEND_URL).host : 'localhost:8000';
-    this.url = `${protocol}//${backendHost}/ws/${roomId}?token=${token}`;
+    const host = window.location.host;
+    this.url = `${protocol}//${host}/ws/${roomId}?token=${token}`;
   }
 
   connect() {

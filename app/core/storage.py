@@ -33,19 +33,23 @@ class ConnectionManager:
         self.room_connections: dict[str, set[str]] = {}
 
     def add_pending_request(self, room_code: str, req_id: str, username: str):
-        if room_code not in self.pending_requests:
-            self.pending_requests[room_code] = {}
-        self.pending_requests[room_code][req_id] = username
+        rc = room_code.upper()
+        if rc not in self.pending_requests:
+            self.pending_requests[rc] = {}
+        self.pending_requests[rc][req_id] = username
 
     def get_pending_request(self, room_code: str, req_id: str):
-        return self.pending_requests.get(room_code, {}).get(req_id)
+        rc = room_code.upper()
+        return self.pending_requests.get(rc, {}).get(req_id)
 
     def remove_pending_request(self, room_code: str, req_id: str):
-        if room_code in self.pending_requests and req_id in self.pending_requests[room_code]:
-            del self.pending_requests[room_code][req_id]
+        rc = room_code.upper()
+        if rc in self.pending_requests and req_id in self.pending_requests[rc]:
+            del self.pending_requests[rc][req_id]
 
     def get_all_pending(self, room_code: str):
-        return self.pending_requests.get(room_code, {})
+        rc = room_code.upper()
+        return self.pending_requests.get(rc, {})
 
     def pre_register_connection(self, participant_id: str, room_code: str, ws_token: str):
         self.active_connections[participant_id] = {
