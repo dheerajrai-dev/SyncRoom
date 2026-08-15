@@ -307,27 +307,31 @@ export default function RoomHistoryPage() {
           </motion.section>
         )}
 
-        {/* Message Log (§10.1: Exact same flat-row style as live chat §7.6) */}
+        {/* Message Log */}
         <section className="flex flex-col gap-3">
           <div className="text-xs font-semibold text-[#8A8375] uppercase tracking-wider">
             Conversation Transcript ({room.messages.length})
           </div>
 
-          <div className="surface-card p-5 sm:p-6 flex flex-col gap-4 bg-[#FFFDF8]">
+          <div className="surface-card p-4 sm:p-6 flex flex-col gap-3 bg-[#F6F2E9]">
             {room.messages.length === 0 ? (
               <p className="text-center text-xs text-[#8A8375] py-8">
                 No messages recorded in this session.
               </p>
             ) : (
               room.messages.map((msg, idx) => (
-                <div key={idx} className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-[#1A1815]">{msg.nickname}</span>
-                    <span className="text-[11px] text-[#8A8375] font-mono">{formatTime(msg.sent_at)}</span>
+                <div key={idx} className="flex w-full justify-start">
+                  <div className="bg-[#FFFDF8] border border-[#E7E1D3] text-[#1A1815] rounded-2xl rounded-tl-xs px-4 py-2.5 max-w-[85%] sm:max-w-[75%] shadow-subtle flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs sm:text-[13px] text-[#D9720F]">{msg.nickname}</span>
+                    </div>
+                    <p className="text-sm sm:text-[15px] text-[#1A1815] leading-relaxed break-words whitespace-pre-wrap">
+                      {msg.content}
+                    </p>
+                    <span className="text-[10px] sm:text-[11px] text-[#8A8375] font-mono text-right mt-0.5">
+                      {formatTime(msg.sent_at)}
+                    </span>
                   </div>
-                  <p className="text-sm sm:text-base text-[#38352F] leading-relaxed break-words">
-                    {msg.content}
-                  </p>
                 </div>
               ))
             )}

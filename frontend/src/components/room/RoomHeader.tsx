@@ -63,20 +63,20 @@ export function RoomHeader({
   };
 
   return (
-    <div className="border-b border-[#E7E1D3] bg-[#FFFDF8] px-4 sm:px-6 py-3 flex items-center justify-between gap-4 z-20">
-      {/* Left: Room Title & Code */}
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="border-b border-[#E7E1D3] bg-[#FFFDF8] px-4 sm:px-6 md:px-8 py-3 sm:py-3.5 flex items-center justify-between gap-4 z-20 shrink-0">
+      {/* Left: Room Title & Room Code Badge */}
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         {isEditingName ? (
           <form onSubmit={handleRenameSubmit} className="flex items-center gap-2">
             <input
               type="text"
               value={tempName}
               onChange={(e) => setTempName(e.target.value)}
-              className="input-field py-1 px-2.5 text-sm w-44 sm:w-60 font-semibold"
+              className="input-field py-1 px-3 text-sm sm:text-base w-44 sm:w-64 font-bold text-[#1A1815]"
               autoFocus
               maxLength={50}
             />
-            <button type="submit" disabled={isSavingName} className="btn btn-secondary py-1 px-2 text-xs">
+            <button type="submit" disabled={isSavingName} className="btn btn-secondary py-1 px-2.5 text-xs">
               <Check className="w-3.5 h-3.5" />
             </button>
             <button
@@ -92,7 +92,7 @@ export function RoomHeader({
           </form>
         ) : (
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-base font-bold text-[#1A1815] truncate">
+            <h1 className="text-base sm:text-lg font-bold text-[#1A1815] truncate">
               {roomName || 'SyncRoom Workspace'}
             </h1>
             {isHost && (
@@ -101,7 +101,7 @@ export function RoomHeader({
                   setTempName(roomName || '');
                   setIsEditingName(true);
                 }}
-                className="p-1 text-[#8A8375] hover:text-[#1A1815] transition-colors cursor-pointer"
+                className="p-1 text-[#8A8375] hover:text-[#1A1815] transition-colors cursor-pointer rounded hover:bg-[#F6F2E9]"
                 title="Rename Room"
               >
                 <Edit2 className="w-3.5 h-3.5" />
@@ -114,10 +114,10 @@ export function RoomHeader({
         {roomCode && (
           <button
             onClick={handleCopyCode}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F6F2E9] border border-[#E7E1D3] text-xs font-mono text-[#1A1815] hover:border-[#D6CFC0] transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6F2E9] border border-[#E7E1D3] text-xs font-mono text-[#1A1815] hover:border-[#D9720F] transition-all cursor-pointer shrink-0 shadow-xs"
             title="Click to copy room code"
           >
-            <span className="font-semibold text-[#D9720F]">{roomCode}</span>
+            <span className="font-bold text-[#D9720F]">#{roomCode}</span>
             {isCopied ? (
               <CheckCheck className="w-3.5 h-3.5 text-[#1F8A4C]" />
             ) : (
@@ -127,47 +127,59 @@ export function RoomHeader({
         )}
       </div>
 
-      {/* Right: Host Controls & Actions (all ghost per §6.8) */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <div className="hidden sm:block">
+      {/* Right: Status Badges, Lock Toggle, and Actions */}
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        <div className="hidden md:block">
           {connectionBadges[connectionState]}
         </div>
 
-        {/* Host lock toggle (ghost button) */}
+        {/* Host Lock / Unlock Toggle Button */}
         {isHost && onToggleLock && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={onToggleLock}
-            className="hidden sm:inline-flex text-xs py-1.5 border border-[#1A1815]"
-            leftIcon={locked ? <Lock className="w-3.5 h-3.5 text-[#D9720F]" /> : <Unlock className="w-3.5 h-3.5 text-[#5C574C]" />}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-[10px] text-xs font-semibold transition-all cursor-pointer border ${
+              locked
+                ? 'bg-[#FBE9D6] border-[#D9720F] text-[#D9720F] hover:bg-[#FBE9D6]/80 shadow-xs'
+                : 'bg-transparent border-[#1A1815] text-[#1A1815] hover:bg-[#F6F2E9]'
+            }`}
+            title={locked ? 'Room is locked: New participants cannot join' : 'Room is unlocked: Participants can request to join'}
           >
-            {locked ? 'Locked' : 'Unlocked'}
-          </Button>
+            {locked ? (
+              <>
+                <Lock className="w-3.5 h-3.5 text-[#D9720F]" />
+                <span>Locked</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="w-3.5 h-3.5 text-[#5C574C]" />
+                <span>Unlocked</span>
+              </>
+            )}
+          </button>
         )}
 
-        {/* Mobile sidebar toggle button */}
+        {/* Mobile Sidebar Toggle Button */}
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-[10px] text-[#38352F] hover:bg-[#F6F2E9] border border-[#E7E1D3] transition-colors"
+            className="lg:hidden p-2 rounded-[10px] text-[#38352F] hover:bg-[#F6F2E9] border border-[#E7E1D3] transition-colors cursor-pointer"
             title="Toggle Participants"
           >
             <Users className="w-4 h-4" />
           </button>
         )}
 
-        {/* End / Leave Session (ghost destructive / secondary) */}
+        {/* End Room / Leave Session Button */}
         <Button
           variant={isHost ? 'danger' : 'ghost'}
           size="sm"
           onClick={onOpenEndModal}
-          className="text-xs py-1.5"
+          className="text-xs py-1.5 px-3.5"
           leftIcon={<LogOut className="w-3.5 h-3.5" />}
         >
           {isHost ? 'End Room' : 'Leave'}
         </Button>
       </div>
-    </div>
+    </header>
   );
 }

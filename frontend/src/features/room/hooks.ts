@@ -100,12 +100,28 @@ export function useRoomActions() {
 
   const toggleLock = async (currentLocked: boolean) => {
     if (!roomCode || !hostToken) return;
-    await roomApi.updateRoom(roomCode, hostToken, { locked: !currentLocked });
+    const newLocked = !currentLocked;
+    // Optimistically update store
+    useRoomStore.setState({ locked: newLocked });
+    try {
+      await roomApi.updateRoom(roomCode, hostToken, { locked: newLocked });
+    } catch (err) {
+      // Revert if failed
+      useRoomStore.setState({ locked: currentLocked });
+      console.error('Failed to toggle room lock:', err);
+    }
   };
 
   const renameRoom = async (newRoomName: string) => {
     if (!roomCode || !hostToken || !newRoomName.trim()) return;
-    await roomApi.updateRoom(roomCode, hostToken, { room_name: newRoomName.trim() });
+    const oldName = useRoomStore.getState().roomName;
+    useRoomStore.setState({ roomName: newRoomName.trim() });
+    try {
+      await roomApi.updateRoom(roomCode, hostToken, { room_name: newRoomName.trim() });
+    } catch (err) {
+      useRoomStore.setState({ roomName: oldName });
+      console.error('Failed to rename room:', err);
+    }
   };
 
   const endRoom = async (save: boolean) => {
