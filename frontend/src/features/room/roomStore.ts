@@ -8,6 +8,48 @@ import type {
   ServerWebSocketMessage,
 } from './types';
 
+const STORAGE_PREFIX = 'syncroom_session_';
+
+export interface StoredRoomSession {
+  roomCode: string;
+  role: RoomRole;
+  hostToken?: string | null;
+  wsToken?: string | null;
+  participantId?: string | null;
+  nickname?: string | null;
+  roomName?: string | null;
+}
+
+export function getStoredSession(roomCode: string): StoredRoomSession | null {
+  if (typeof window === 'undefined' || !roomCode) return null;
+  try {
+    const raw = sessionStorage.getItem(`${STORAGE_PREFIX}${roomCode.toUpperCase()}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as StoredRoomSession;
+  } catch {
+    return null;
+  }
+}
+
+export function saveStoredSession(session: StoredRoomSession): void {
+  if (typeof window === 'undefined' || !session.roomCode) return;
+  try {
+    sessionStorage.setItem(
+      `${STORAGE_PREFIX}${session.roomCode.toUpperCase()}`,
+      JSON.stringify(session)
+    );
+  } catch {}
+}
+
+export function clearStoredSession(roomCode?: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (roomCode) {
+      sessionStorage.removeItem(`${STORAGE_PREFIX}${roomCode.toUpperCase()}`);
+    }
+  } catch {}
+}
+
 interface RoomStoreState {
   roomCode: string | null;
   roomName: string | null;
@@ -45,7 +87,7 @@ interface RoomStoreState {
   resetRoom: () => void;
 }
 
-export const useRoomStore = create<RoomStoreState>((set) => ({
+export const useRoomStore = create<RoomStoreState>((set, get) => ({
   roomCode: null,
   roomName: null,
   locked: false,
@@ -68,15 +110,31 @@ export const useRoomStore = create<RoomStoreState>((set) => ({
   closeReason: null,
 
   setCredentials: (creds) => {
-    set((state) => ({
-      roomCode: creds.roomCode.toUpperCase(),
+    const uppercaseCode = creds.roomCode.toUpperCase();
+    const currentState = get();
+
+    const mergedCredentials: StoredRoomSession = {
+      roomCode: uppercaseCode,
       role: creds.role,
-      hostToken: creds.hostToken !== undefined ? creds.hostToken : state.hostToken,
-      wsToken: creds.wsToken !== undefined ? creds.wsToken : state.wsToken,
-      participantId: creds.participantId !== undefined ? creds.participantId : state.participantId,
-      nickname: creds.nickname !== undefined ? creds.nickname : state.nickname,
-      roomName: creds.roomName !== undefined ? creds.roomName : state.roomName,
-    }));
+      hostToken: creds.hostToken !== undefined ? creds.hostToken : currentState.hostToken,
+      wsToken: creds.wsToken !== undefined ? creds.wsToken : (creds.hostToken || currentState.wsToken),
+      participantId: creds.participantId !== undefined ? creds.participantId : currentState.participantId,
+      nickname: creds.nickname !== undefined ? creds.nickname : currentState.nickname,
+      roomName: creds.roomName !== undefined ? creds.roomName : currentState.roomName,
+    };
+
+    // Save to sessionStorage so reload/refresh retains session for this room
+    saveStoredSession(mergedCredentials);
+
+    set({
+      roomCode: mergedCredentials.roomCode,
+      role: mergedCredentials.role,
+      hostToken: mergedCredentials.hostToken || null,
+      wsToken: mergedCredentials.wsToken || null,
+      participantId: mergedCredentials.participantId || null,
+      nickname: mergedCredentials.nickname || null,
+      roomName: mergedCredentials.roomName || null,
+    });
   },
 
   setConnectionState: (connectionState) => {
@@ -86,36 +144,52 @@ export const useRoomStore = create<RoomStoreState>((set) => ({
   handleServerMessage: (msg) => {
     switch (msg.type) {
       case 'room_state':
-        set({
-          roomName: msg.room_name,
-          locked: msg.locked,
-          participants: msg.participants.map((p) => ({
-            participant_id: p.participant_id,
-            nickname: p.nickname,
-          })),
-          messages: msg.messages.map((m) => ({
-            message_id: m.message_id,
-            participant_id: '',
-            nickname: m.nickname,
-            content: m.content,
-            sent_at: m.sent_at,
-          })),
+        set((state) => {
+          let resolvedParticipantId = state.participantId;
+          if (!resolvedParticipantId && state.role === 'host' && msg.participants.length > 0) {
+            const hostP = msg.participants.find((p) => p.nickname === state.nickname) || msg.participants[0];
+            if (hostP) {
+              resolvedParticipantId = hostP.participant_id;
+            }
+          }
+
+          return {
+            roomName: msg.room_name,
+            locked: msg.locked,
+            participantId: resolvedParticipantId,
+            participants: msg.participants.map((p) => ({
+              participant_id: p.participant_id,
+              nickname: p.nickname,
+            })),
+            messages: msg.messages.map((m) => ({
+              message_id: m.message_id,
+              participant_id: m.participant_id || '',
+              nickname: m.nickname,
+              content: m.content,
+              sent_at: m.sent_at,
+            })),
+          };
         });
         break;
 
       case 'chat_message':
-        set((state) => ({
-          messages: [
-            ...state.messages,
-            {
-              message_id: msg.message_id,
-              participant_id: msg.participant_id,
-              nickname: msg.nickname,
-              content: msg.content,
-              sent_at: msg.sent_at,
-            },
-          ],
-        }));
+        set((state) => {
+          if (state.messages.some((m) => m.message_id === msg.message_id)) {
+            return state;
+          }
+          return {
+            messages: [
+              ...state.messages,
+              {
+                message_id: msg.message_id,
+                participant_id: msg.participant_id,
+                nickname: msg.nickname,
+                content: msg.content,
+                sent_at: msg.sent_at,
+              },
+            ],
+          };
+        });
         break;
 
       case 'message_edited':
@@ -142,7 +216,6 @@ export const useRoomStore = create<RoomStoreState>((set) => ({
               ...state.participants,
               { participant_id: msg.participant_id, nickname: msg.nickname },
             ],
-            // Remove from pending if was present
             pendingRequests: state.pendingRequests.filter((p) => p.request_id !== msg.participant_id),
           };
         });
@@ -219,6 +292,9 @@ export const useRoomStore = create<RoomStoreState>((set) => ({
   },
 
   resetRoom: () => {
+    const currentCode = get().roomCode;
+    clearStoredSession(currentCode);
+
     set({
       roomCode: null,
       roomName: null,

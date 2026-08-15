@@ -36,7 +36,7 @@ export function MessageComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-3 sm:p-4 border-t border-white/10 bg-slate-950/60 backdrop-blur-md flex items-end gap-2 sm:gap-3"
+      className="p-3 sm:p-4 border-t border-[#E7E1D3] bg-[#FFFDF8] flex items-end gap-2 sm:gap-3"
     >
       <div className="flex-1 relative">
         <textarea
@@ -49,7 +49,7 @@ export function MessageComposer({
               ? 'Reconnecting to room...'
               : 'Type your message... (Enter to send, Shift+Enter for newline)'
           }
-          className="w-full input-field py-2.5 px-3.5 text-sm resize-none h-11 max-h-28 overflow-y-auto leading-relaxed"
+          className="w-full input-field py-2 px-3 text-sm resize-none h-11 max-h-28 overflow-y-auto leading-relaxed border-[#D6CFC0] focus:border-[#D9720F]"
           rows={1}
           maxLength={1000}
         />

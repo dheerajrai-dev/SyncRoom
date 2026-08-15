@@ -1,7 +1,6 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { ShieldX, ArrowLeft, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function RequestDeniedPage() {
@@ -16,43 +15,37 @@ export default function RequestDeniedPage() {
   return (
     <div className="center-page">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18 }}
         className="w-full max-w-md"
       >
         <Card className="form-card text-center items-center">
-          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-2">
-            <ShieldX className="w-7 h-7" />
-          </div>
-
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-white tracking-tight">
+            <h2 className="text-2xl font-bold text-[#1A1815] tracking-tight">
               {isExpired ? 'Request Expired' : 'Join Request Denied'}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-sm text-[#5C574C]">
               {isExpired
                 ? 'Your request to join timed out before the host responded.'
-                : 'The room host declined your request to enter this session.'}
+                : 'The host declined your request to enter this session.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 pt-4 w-full">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => navigate('/')}
-              leftIcon={<ArrowLeft className="w-4 h-4" />}
-            >
-              Home
-            </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 w-full">
             <Button
               variant="primary"
-              className="flex-1"
+              className="w-full sm:flex-1"
               onClick={() => navigate(`/join?code=${roomCode}`)}
-              leftIcon={<RefreshCw className="w-4 h-4" />}
             >
               Try Again
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full sm:flex-1"
+              onClick={() => navigate('/')}
+            >
+              Home
             </Button>
           </div>
         </Card>

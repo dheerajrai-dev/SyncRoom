@@ -8,7 +8,7 @@ import { updateProfileSchema, type UpdateProfileFormData } from '../features/pro
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { LogOut, Check, Edit2, Shield } from 'lucide-react';
+import { Check, Edit2, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function ProfilePage() {
@@ -49,110 +49,118 @@ export default function ProfilePage() {
     navigate('/');
   };
 
+  const initialLetter = (user?.display_name || user?.username || 'U').charAt(0).toUpperCase();
+
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 w-full space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Account Profile</h1>
-        <p className="text-sm text-slate-400 mt-1">Manage your identity and session preferences.</p>
-      </div>
-
-      {successMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300"
-        >
-          <Check className="w-4 h-4 text-emerald-400" />
-          <span>{successMessage}</span>
-        </motion.div>
-      )}
-
-      {/* Profile Overview Card */}
-      <Card className="p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-xl font-bold text-blue-300">
-            {user?.display_name?.charAt(0).toUpperCase() || user?.username.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">{user?.display_name || user?.username}</h2>
-            <p className="text-xs text-slate-400 font-mono">@{user?.username}</p>
-          </div>
+    <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-6 py-10 sm:py-14">
+      <div className="w-full max-w-xl flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1815] tracking-tight">
+            Account Settings
+          </h1>
+          <p className="text-sm text-[#5C574C]">
+            Manage your account identity and preferences.
+          </p>
         </div>
 
-        {/* Details and Edit Form */}
-        <div className="pt-4 border-t border-white/5 space-y-4">
-          {isEditing ? (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <Input
-                label="Display Name"
-                placeholder="Your display name"
-                error={errors.display_name?.message}
-                {...register('display_name')}
-              />
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-[10px] bg-[#E3F3E8] border border-[#1F8A4C]/20 flex items-center gap-2 text-xs text-[#1F8A4C]"
+          >
+            <Check className="w-4 h-4 text-[#1F8A4C]" />
+            <span>{successMessage}</span>
+          </motion.div>
+        )}
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                  disabled={updateMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  isLoading={updateMutation.isPending}
-                  leftIcon={<Check className="w-4 h-4" />}
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                <div>
-                  <p className="text-xs text-slate-400">Display Name</p>
-                  <p className="text-sm font-semibold text-white mt-0.5">{user?.display_name || user?.username}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  leftIcon={<Edit2 className="w-3.5 h-3.5" />}
-                >
-                  Edit
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                <div>
-                  <p className="text-xs text-slate-400">Username</p>
-                  <p className="text-sm font-semibold text-white mt-0.5 font-mono">@{user?.username}</p>
-                </div>
-                <span className="text-xs text-slate-500 flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5 text-slate-400" />
-                  Primary Handle
-                </span>
-              </div>
+        {/* Profile Card (§9.5: Stacked form with initial-letter circle avatar) */}
+        <Card className="form-card max-w-none flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            {/* Initial-letter circle (§9.5) */}
+            <div className="w-14 h-14 rounded-full bg-[#1A1815] text-[#FFFDF8] flex items-center justify-center text-xl font-bold font-mono shrink-0">
+              {initialLetter}
             </div>
-          )}
-        </div>
-      </Card>
+            <div className="flex flex-col">
+              <h2 className="text-lg font-bold text-[#1A1815]">{user?.display_name || user?.username}</h2>
+              <p className="text-xs text-[#8A8375] font-mono">@{user?.username}</p>
+            </div>
+          </div>
 
-      {/* Log Out Section */}
-      <Card className="p-6 flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-white">Log Out</h3>
-          <p className="text-xs text-slate-400 mt-0.5">End your account session on this device.</p>
+          <div className="pt-4 border-t border-[#E7E1D3] flex flex-col gap-4">
+            {isEditing ? (
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+                <Input
+                  label="Display Name"
+                  placeholder="Your display name"
+                  autoFocus
+                  error={errors.display_name?.message}
+                  {...register('display_name')}
+                />
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    disabled={updateMutation.isPending}
+                    className="text-xs text-[#8A8375] hover:text-[#1A1815]"
+                  >
+                    Cancel
+                  </button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    isLoading={updateMutation.isPending}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between p-3 rounded-[10px] bg-[#F6F2E9] border border-[#E7E1D3]">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-[#8A8375]">Display Name</span>
+                    <span className="text-sm font-semibold text-[#1A1815]">{user?.display_name || user?.username}</span>
+                  </div>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="btn btn-ghost text-xs py-1 px-2.5 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-[10px] bg-[#F6F2E9] border border-[#E7E1D3]">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-[#8A8375]">Username</span>
+                    <span className="text-sm font-semibold text-[#1A1815] font-mono">@{user?.username}</span>
+                  </div>
+                  <span className="text-xs text-[#8A8375]">Primary ID</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Log Out Band */}
+        <div className="surface-card p-4 sm:p-5 flex items-center justify-between">
+          <div className="flex flex-col">
+            <h3 className="text-sm font-bold text-[#1A1815]">Log Out</h3>
+            <p className="text-xs text-[#8A8375]">Sign out of your account on this browser.</p>
+          </div>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleLogout}
+            leftIcon={<LogOut className="w-4 h-4" />}
+          >
+            Log Out
+          </Button>
         </div>
-        <Button variant="danger" size="sm" onClick={handleLogout} leftIcon={<LogOut className="w-4 h-4" />}>
-          Sign Out
-        </Button>
-      </Card>
+      </div>
     </div>
   );
 }

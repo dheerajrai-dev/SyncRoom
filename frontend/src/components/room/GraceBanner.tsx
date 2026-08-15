@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertCircle, Clock } from 'lucide-react';
 
 export interface GraceBannerProps {
   isVisible: boolean;
@@ -41,18 +40,17 @@ export function GraceBanner({ isVisible, graceExpiresAt }: GraceBannerProps) {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="bg-amber-500/15 border-b border-amber-500/30 text-amber-200 px-4 py-2.5 flex items-center justify-between text-xs sm:text-sm font-medium z-30"
+          className="bg-[#FBE9D6] border-b border-[#E7E1D3] text-[#1A1815] px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-medium z-30"
         >
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Host disconnected. Room will close automatically if the host does not return.</span>
+            <span className="w-2 h-2 rounded-full bg-[#D9720F]" />
+            <span>
+              Host disconnected — reconnecting or room closes in{' '}
+              <span className="font-mono font-bold tabular-nums text-[#1A1815]">
+                {secondsRemaining !== null ? formatCountdown(secondsRemaining) : '05:00'}
+              </span>
+            </span>
           </div>
-          {secondsRemaining !== null && (
-            <div className="flex items-center gap-1.5 font-mono font-semibold text-amber-300 bg-amber-500/20 px-2.5 py-1 rounded-md border border-amber-500/30 shrink-0 ml-2">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{formatCountdown(secondsRemaining)}</span>
-            </div>
-          )}
         </motion.div>
       )}
     </AnimatePresence>

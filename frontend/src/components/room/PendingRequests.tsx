@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import type { PendingRequest } from '../../features/room/types';
-import { Button } from '../ui/Button';
-import { UserCheck, UserX, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export interface PendingRequestsProps {
@@ -34,51 +32,39 @@ export function PendingRequests({ requests, onApprove, onDeny }: PendingRequests
   };
 
   return (
-    <div className="p-4 border-b border-white/10 bg-amber-500/5">
-      <div className="flex items-center gap-2 mb-3">
-        <UserPlus className="w-4 h-4 text-amber-400" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
-          Pending Approvals ({requests.length})
-        </h3>
+    <div className="border-b border-[#E7E1D3] bg-[#FBE9D6]/30">
+      <div className="px-4 py-2 text-xs font-semibold text-[#D9720F] uppercase tracking-wider">
+        Requests ({requests.length})
       </div>
 
-      <div className="space-y-2">
+      <div className="divide-y divide-[#E7E1D3]">
         <AnimatePresence>
           {requests.map((req) => {
             const isProcessing = processingId === req.request_id;
             return (
               <motion.div
                 key={req.request_id}
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="p-2.5 rounded-xl glass-panel bg-slate-900/80 border-amber-500/20 flex flex-col gap-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-4 py-2.5 flex items-center justify-between gap-2"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-white truncate">{req.nickname}</span>
-                  <span className="text-[10px] text-amber-400/80 font-medium">Waiting</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    className="flex-1 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
-                    isLoading={isProcessing}
+                <span className="text-sm font-medium text-[#1A1815] truncate">{req.nickname}</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    disabled={isProcessing}
                     onClick={() => handleApprove(req.request_id)}
-                    leftIcon={<UserCheck className="w-3.5 h-3.5" />}
+                    className="px-2 py-1 text-xs font-medium text-[#1F8A4C] hover:bg-[#E3F3E8] border border-[#1F8A4C] rounded-[6px] transition-colors cursor-pointer"
                   >
                     Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    className="flex-1 py-1 text-xs"
+                  </button>
+                  <button
                     disabled={isProcessing}
                     onClick={() => handleDeny(req.request_id)}
-                    leftIcon={<UserX className="w-3.5 h-3.5" />}
+                    className="px-2 py-1 text-xs font-medium text-[#C23B2E] hover:bg-[#FBEAE6] border border-[#C23B2E] rounded-[6px] transition-colors cursor-pointer"
                   >
                     Deny
-                  </Button>
+                  </button>
                 </div>
               </motion.div>
             );

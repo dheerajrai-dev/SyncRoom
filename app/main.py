@@ -36,7 +36,7 @@ app.include_router(rooms.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1/dashboard")
-app.include_router(websocket_router)
+app.include_router(websocket_router, prefix="/api/v1")
 
 @app.get("/")
 async def read_root():

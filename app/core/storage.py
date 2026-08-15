@@ -32,6 +32,35 @@ class ConnectionManager:
         # Maps room_code to a set of connected participant_ids (for easy broadcasting)
         self.room_connections: dict[str, set[str]] = {}
 
+        # Maps room_code to a list of message dicts in memory
+        self.room_messages: dict[str, list[dict]] = {}
+
+    def get_messages(self, room_code: str) -> list[dict]:
+        return self.room_messages.get(room_code.upper(), [])
+
+    def add_message(self, room_code: str, message: dict):
+        rc = room_code.upper()
+        if rc not in self.room_messages:
+            self.room_messages[rc] = []
+        self.room_messages[rc].append(message)
+
+    def edit_message(self, room_code: str, message_id: str, new_content: str) -> bool:
+        rc = room_code.upper()
+        for msg in self.room_messages.get(rc, []):
+            if msg["message_id"] == message_id:
+                msg["content"] = new_content
+                return True
+        return False
+
+    def delete_message(self, room_code: str, message_id: str) -> bool:
+        rc = room_code.upper()
+        msgs = self.room_messages.get(rc, [])
+        for i, msg in enumerate(msgs):
+            if msg["message_id"] == message_id:
+                del msgs[i]
+                return True
+        return False
+
     def add_pending_request(self, room_code: str, req_id: str, username: str):
         rc = room_code.upper()
         if rc not in self.pending_requests:
@@ -136,15 +165,19 @@ class ConnectionManager:
                     pass
             self.remove_connection(pid)
             
-        if room_code in self.pending_requests:
-            del self.pending_requests[room_code]
+        rc = room_code.upper()
+        if rc in self.pending_requests:
+            del self.pending_requests[rc]
+        if rc in self.room_messages:
+            del self.room_messages[rc]
 
+import os
 # Global connection manager instance
 manager = ConnectionManager()
 
 MAX_PARTICIPANTS = 10
 RECONNECT_TIMEOUT_SECONDS = 70
-HOST_RECONNECT_GRACE_PERIOD_SECONDS = 300
+HOST_RECONNECT_GRACE_PERIOD_SECONDS = int(os.environ.get("HOST_GRACE_PERIOD", "45"))
 
 def is_reconnect_expired(disconnected_at: datetime) -> bool:
     if not disconnected_at:
@@ -153,27 +186,25 @@ def is_reconnect_expired(disconnected_at: datetime) -> bool:
     return elapsed.total_seconds() > RECONNECT_TIMEOUT_SECONDS
 
 async def process_chat_message(
-    room_id,
     participant_db_id,
     username: str,
     content: str,
     room_code: str
 ):
-    # Persist the message to PostgreSQL
-    db_message = await create_message_row(room_id, participant_db_id, username, content)
-
     message_record = {
         "type": "chat_message",
-        "message_id": str(db_message.id),
+        "message_id": str(uuid.uuid4()),
         "participant_id": str(participant_db_id),
-        "username": username,
+        "nickname": username,
         "content": content,
-        "sent_at": db_message.sent_at.isoformat(),
+        "sent_at": datetime.now(timezone.utc).isoformat(),
     }
+    
+    manager.add_message(room_code, message_record)
 
-    # Broadcast via ConnectionManager
-    await manager.broadcast_to_room(room_code, message_record, exclude_participant_id=str(participant_db_id))
-    return
+    # Broadcast via ConnectionManager to all room participants
+    await manager.broadcast_to_room(room_code, message_record)
+    return message_record
 
 async def close_and_delete_room(room_code: str):
     await manager.broadcast_to_room(room_code, {
@@ -193,7 +224,7 @@ def gather_export_data(room_name: str, active_participants: list, db_messages: l
         "room_name": room_name,
         "participants": participants,
         "messages": [
-            {"time": m.sent_at.isoformat(), "username": m.nickname, "content": m.content}
+            {"time": m.sent_at.isoformat(), "nickname": m.nickname, "content": m.content}
             for m in db_messages
         ],
     }

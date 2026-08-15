@@ -1,52 +1,42 @@
 :root {
-  /* Color Palette - Curated HSL Theme */
-  --bg-primary: #0b0f19;
-  --bg-secondary: #111827;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b0f19 100%);
-  
-  --primary-500: #3b82f6;
-  --primary-600: #2563eb;
-  --primary-400: #60a5fa;
-  --primary-glow: rgba(59, 130, 246, 0.15);
-  
-  --accent-500: #6366f1;
-  --accent-600: #4f46e5;
-  
-  --success-500: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.1);
-  --success-border: rgba(16, 185, 129, 0.3);
-  
-  --warning-500: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.1);
-  --warning-border: rgba(245, 158, 11, 0.3);
-  
-  --danger-500: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --danger-border: rgba(239, 68, 68, 0.3);
-  
-  /* Text */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  
-  /* Glass Surfaces */
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-bg-hover: rgba(255, 255, 255, 0.07);
-  --glass-bg-active: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 255, 255, 0.16);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --glass-shadow-lg: 0 16px 48px 0 rgba(0, 0, 0, 0.5);
-  --glass-blur: blur(12px);
-  
-  /* Layout & Geometry */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-  
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Neutrals (warm-toned) */
+  --ink: #1A1815;
+  --graphite: #38352F;
+  --slate: #5C574C;
+  --steel: #8A8375;
+  --mist: #D6CFC0;
+  --fog: #E7E1D3;
+  --parchment: #F6F2E9;
+  --paper: #FFFDF8;
+
+  /* Accent — Ember */
+  --ember: #D9720F;
+  --ember-600: #B85A0C;
+  --ember-tint: #FBE9D6;
+
+  /* Semantic */
+  --success: #1F8A4C;
+  --success-tint: #E3F3E8;
+  --danger: #C23B2E;
+  --danger-tint: #FBEAE6;
+
+  /* Typography */
+  --font-primary: 'Satoshi', 'Inter', 'General Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radius */
+  --radius-input: 10px;
+  --radius-button: 10px;
+  --radius-card: 14px;
+  --radius-modal: 18px;
+  --radius-pill: 999px;
+
+  /* Shadow */
+  --shadow-subtle: 0 1px 2px rgba(26, 21, 15, 0.06);
+  --shadow-md: 0 8px 24px rgba(26, 21, 15, 0.10);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
 }

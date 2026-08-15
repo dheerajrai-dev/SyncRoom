@@ -5,18 +5,16 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { joinRoomSchema, type JoinRoomFormData } from '../features/room/schemas';
 import { roomApi } from '../features/room/api';
 import { useRoomStore } from '../features/room/roomStore';
-import { useAuth } from '../features/auth/hooks';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { LogIn, ArrowLeft, AlertCircle, Hash, User } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function JoinRoomPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCode = searchParams.get('code') || '';
-  const { user } = useAuth();
   const setCredentials = useRoomStore((state) => state.setCredentials);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -29,7 +27,7 @@ export default function JoinRoomPage() {
     resolver: zodResolver(joinRoomSchema),
     defaultValues: {
       roomCode: initialCode.toUpperCase(),
-      nickname: user?.display_name || user?.username || '',
+      nickname: '',
     },
   });
 
@@ -61,43 +59,42 @@ export default function JoinRoomPage() {
   return (
     <div className="center-page">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18 }}
         className="w-full max-w-md"
       >
-        <Card className="form-card">
+        <Card className="form-card flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-[#8A8375] hover:text-[#1A1815] transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </Link>
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Join a Room</h2>
-            <p className="text-xs text-slate-400">
-              Enter the 6-character room code and choose your display nickname.
+          <div className="flex flex-col gap-1.5">
+            <h2 className="text-2xl font-bold text-[#1A1815] tracking-tight">Join a Room</h2>
+            <p className="text-sm text-[#5C574C]">
+              Enter the room code and choose your display nickname.
             </p>
           </div>
 
           {serverError && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-xs text-red-300">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <div className="p-3 rounded-[10px] bg-[#FBEAE6] border border-[#C23B2E]/20 flex items-center gap-2 text-xs text-[#C23B2E]">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{serverError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <Input
               label="Room Code"
               placeholder="e.g. ABC123"
               autoFocus
-              className="font-mono uppercase tracking-widest text-center text-lg font-bold"
-              leftIcon={<Hash className="w-4 h-4" />}
+              className="font-mono uppercase tracking-widest text-center font-bold text-base"
               error={errors.roomCode?.message}
               {...register('roomCode', {
                 onChange: (e) => {
@@ -107,9 +104,8 @@ export default function JoinRoomPage() {
             />
 
             <Input
-              label="Your Nickname"
+              label="Nickname"
               placeholder="e.g. Bob"
-              leftIcon={<User className="w-4 h-4" />}
               error={errors.nickname?.message}
               {...register('nickname')}
             />
@@ -119,9 +115,8 @@ export default function JoinRoomPage() {
               variant="primary"
               className="w-full py-2.5 mt-2"
               isLoading={isSubmitting}
-              leftIcon={<LogIn className="w-4 h-4" />}
             >
-              Request to Join
+              Join Room
             </Button>
           </form>
         </Card>

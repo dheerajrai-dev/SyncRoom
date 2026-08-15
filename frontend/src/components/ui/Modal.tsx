@@ -47,33 +47,37 @@ export function Modal({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
+
+          {/* Modal Content (§6.10: --paper surface, --fog hairline border, 18px radius) */}
           <motion.div
             className={cn(
-              'relative z-10 w-full glass-panel bg-slate-900/90 border border-slate-700/60 p-6 shadow-2xl rounded-2xl overflow-hidden',
+              'relative z-10 w-full surface-modal bg-[#FFFDF8] border border-[#E7E1D3] p-6 shadow-md rounded-[18px] text-[#1A1815] overflow-hidden',
               maxWClasses[maxWidth]
             )}
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.15 }}
           >
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
-                {title && <h3 className="text-lg font-semibold text-white">{title}</h3>}
-                {description && <p className="text-xs text-slate-400 mt-1">{description}</p>}
+                {title && <h3 className="text-lg font-bold text-[#1A1815]">{title}</h3>}
+                {description && <p className="text-xs sm:text-sm text-[#5C574C] mt-1">{description}</p>}
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1 rounded-[8px] text-[#8A8375] hover:text-[#1A1815] hover:bg-[#F6F2E9] transition-colors cursor-pointer"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             {children}

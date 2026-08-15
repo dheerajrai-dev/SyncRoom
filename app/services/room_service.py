@@ -19,6 +19,12 @@ async def close_room(db: AsyncSession, room_id: str, save: bool = False, reason:
         db_room.is_saved = True
         db_room.archived_at = text("now()")
         
+        # Save messages from memory
+        from app.db.message_repository import save_messages_for_room
+        msgs = manager.get_messages(db_room.room_code)
+        if msgs:
+            await save_messages_for_room(db, db_room.id, msgs)
+
         # Delete participants
         await db.execute(text("DELETE FROM participants WHERE room_id = :room_id"), {"room_id": db_room.id})
         await db.commit()

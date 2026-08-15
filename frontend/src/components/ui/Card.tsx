@@ -8,7 +8,11 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export function Card({ className, interactive, children, ...props }: CardProps) {
   return (
     <div
-      className={cn(interactive ? 'glass-card' : 'glass-panel p-6', className)}
+      className={cn(
+        'surface-card p-6 transition-colors',
+        interactive && 'hover:border-[#D6CFC0] cursor-pointer',
+        className
+      )}
       {...props}
     >
       {children}

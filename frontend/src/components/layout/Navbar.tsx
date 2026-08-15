@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth/hooks';
-import { Button } from '../ui/Button';
-import { PlusCircle, LogIn, UserPlus, LogOut, User, LayoutDashboard, Menu, X, Radio } from 'lucide-react';
+import { Plus, LayoutDashboard, User, LogOut, Menu, X, Radio, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function Navbar() {
@@ -19,61 +18,64 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/70 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
+    <header className="sticky top-0 z-40 w-full border-b border-[#E7E1D3] bg-[#FFFDF8]">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-4">
+        
+        {/* Brand with proper spacing & icon */}
         <Link
           to={isAuthenticated ? '/dashboard' : '/'}
-          className="flex items-center gap-2.5 group cursor-pointer"
+          className="flex items-center gap-2.5 py-1 px-0.5 group cursor-pointer shrink-0"
         >
-          <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
-            <Radio className="w-5 h-5" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-[#FBE9D6] border border-[#D9720F]/20 flex items-center justify-center text-[#D9720F] shrink-0 transition-transform group-hover:scale-105">
+            <Radio className="w-4 h-4" />
           </div>
-          <span className="font-bold text-lg tracking-tight text-white group-hover:text-blue-400 transition-colors">
+          <span className="font-bold text-base sm:text-lg tracking-tight text-[#1A1815]">
             SyncRoom
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Center / Left Navigation Links */}
         <nav className="hidden md:flex items-center gap-6">
           <Link
             to="/create"
-            className="text-sm font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
+            className="text-sm font-medium text-[#38352F] hover:text-[#D9720F] flex items-center gap-1.5 transition-colors"
           >
-            <PlusCircle className="w-4 h-4 text-blue-400" />
+            <Plus className="w-4 h-4 text-[#D9720F]" />
             Create Room
           </Link>
           <Link
             to="/join"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-[#38352F] hover:text-[#1A1815] transition-colors"
           >
             Join Room
           </Link>
           {isAuthenticated && (
             <Link
               to="/dashboard"
-              className="text-sm font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
+              className="text-sm font-medium text-[#38352F] hover:text-[#1A1815] flex items-center gap-1.5 transition-colors"
             >
-              <LayoutDashboard className="w-4 h-4 text-slate-400" />
+              <LayoutDashboard className="w-3.5 h-3.5 text-[#8A8375]" />
               Dashboard
             </Link>
           )}
         </nav>
 
-        {/* Desktop Auth Controls */}
+        {/* Right Side: Guest indicator vs. Signed-In User Menu (§9.3) */}
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated && user ? (
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] hover:bg-[#F6F2E9] border border-[#E7E1D3] transition-all cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-xs font-semibold text-blue-300">
-                  {user.display_name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
+                {/* Circular Avatar Initial (§9.3) */}
+                <div className="w-6 h-6 rounded-full bg-[#1A1815] text-[#FFFDF8] flex items-center justify-center text-xs font-bold font-mono">
+                  {(user.display_name || user.username).charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-slate-200">
+                <span className="text-sm font-medium text-[#1A1815]">
                   {user.display_name || user.username}
                 </span>
+                <ChevronDown className="w-3.5 h-3.5 text-[#8A8375]" />
               </button>
 
               <AnimatePresence>
@@ -84,29 +86,37 @@ export function Navbar() {
                       onClick={() => setIsUserMenuOpen(false)}
                     />
                     <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      initial={{ opacity: 0, y: 4, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-48 rounded-xl glass-panel bg-slate-900/95 border border-slate-800 p-1.5 shadow-xl z-20"
+                      exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 mt-2 w-48 surface-modal p-1.5 z-20 shadow-md"
                     >
-                      <div className="px-3 py-2 border-b border-white/5 mb-1">
-                        <p className="text-xs text-slate-400 font-medium">Signed in as</p>
-                        <p className="text-sm font-semibold text-white truncate">@{user.username}</p>
+                      <div className="px-3 py-2 border-b border-[#E7E1D3] mb-1">
+                        <p className="text-xs text-[#8A8375]">Signed in as</p>
+                        <p className="text-xs font-semibold text-[#1A1815] font-mono truncate">@{user.username}</p>
                       </div>
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#38352F] hover:text-[#1A1815] hover:bg-[#F6F2E9] rounded-[8px] transition-colors"
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5 text-[#8A8375]" />
+                        Dashboard
+                      </Link>
                       <Link
                         to="/profile"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#38352F] hover:text-[#1A1815] hover:bg-[#F6F2E9] rounded-[8px] transition-colors"
                       >
-                        <User className="w-4 h-4 text-slate-400" />
+                        <User className="w-3.5 h-3.5 text-[#8A8375]" />
                         Profile Settings
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#C23B2E] hover:bg-[#FBEAE6] rounded-[8px] transition-colors cursor-pointer"
                       >
-                        <LogOut className="w-4 h-4" />
+                        <LogOut className="w-3.5 h-3.5" />
                         Log Out
                       </button>
                     </motion.div>
@@ -115,24 +125,18 @@ export function Navbar() {
               </AnimatePresence>
             </div>
           ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/login')}
-                leftIcon={<LogIn className="w-4 h-4" />}
+            <div className="flex items-center gap-3">
+              {/* Neutral --fog-tint "Guest" pill (§9.3) */}
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold text-[#5C574C] bg-[#E7E1D3] select-none tracking-wide">
+                Guest
+              </span>
+              <Link
+                to="/login"
+                className="btn btn-ghost text-xs py-1.5 px-3 font-semibold text-[#1A1815] hover:text-[#D9720F] hover:bg-[#F6F2E9] transition-all"
               >
                 Sign In
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate('/register')}
-                leftIcon={<UserPlus className="w-4 h-4" />}
-              >
-                Sign Up
-              </Button>
-            </>
+              </Link>
+            </div>
           )}
         </div>
 
@@ -140,9 +144,9 @@ export function Navbar() {
         <div className="md:hidden flex items-center gap-2">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-[8px] text-[#5C574C] hover:text-[#1A1815] hover:bg-[#F6F2E9] transition-colors cursor-pointer"
           >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
@@ -154,86 +158,63 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-b border-white/10 bg-slate-950/95 px-4 pt-2 pb-6 space-y-4"
+            className="md:hidden border-b border-[#E7E1D3] bg-[#FFFDF8] px-4 py-3 flex flex-col gap-2"
           >
-            <div className="flex flex-col space-y-2">
-              <Link
-                to="/create"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-sm font-medium flex items-center gap-2"
-              >
-                <PlusCircle className="w-4 h-4 text-blue-400" />
-                Create Room
-              </Link>
-              <Link
-                to="/join"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-sm font-medium"
-              >
-                Join Room
-              </Link>
-              {isAuthenticated && (
+            <Link
+              to="/create"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-[#38352F] hover:text-[#1A1815] hover:bg-[#F6F2E9] text-sm font-medium flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4 text-[#D9720F]" />
+              Create Room
+            </Link>
+            <Link
+              to="/join"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-[#38352F] hover:text-[#1A1815] hover:bg-[#F6F2E9] text-sm font-medium block"
+            >
+              Join Room
+            </Link>
+            {isAuthenticated ? (
+              <>
                 <Link
                   to="/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 text-sm font-medium flex items-center gap-2"
+                  className="px-3 py-2 rounded-lg text-[#38352F] hover:text-[#1A1815] hover:bg-[#F6F2E9] text-sm font-medium flex items-center gap-2"
                 >
-                  <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                  <LayoutDashboard className="w-4 h-4 text-[#8A8375]" />
                   Dashboard
                 </Link>
-              )}
-            </div>
-
-            <div className="border-t border-white/10 pt-4">
-              {isAuthenticated && user ? (
-                <div className="space-y-2">
-                  <div className="px-3 py-1">
-                    <p className="text-xs text-slate-400">Signed in as</p>
-                    <p className="text-sm font-semibold text-white">
-                      {user.display_name || user.username} (@{user.username})
-                    </p>
-                  </div>
-                  <Link
-                    to="/profile"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5"
-                  >
-                    <User className="w-4 h-4 text-slate-400" />
-                    Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-500/10"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Log Out
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      navigate('/login');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      navigate('/register');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    Sign Up
-                  </Button>
-                </div>
-              )}
-            </div>
+                <Link
+                  to="/profile"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-[#38352F] hover:text-[#1A1815] hover:bg-[#F6F2E9] text-sm font-medium flex items-center gap-2"
+                >
+                  <User className="w-4 h-4 text-[#8A8375]" />
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-[#C23B2E] hover:bg-[#FBEAE6] flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <div className="pt-2 border-t border-[#E7E1D3] flex items-center justify-between px-3">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold text-[#5C574C] bg-[#E7E1D3]">
+                  Guest
+                </span>
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-sm font-semibold text-[#D9720F] hover:underline"
+                >
+                  Sign In →
+                </Link>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

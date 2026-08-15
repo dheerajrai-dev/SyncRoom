@@ -7,7 +7,7 @@ import { useAuth } from '../features/auth/hooks';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { UserPlus, User, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function RegisterPage() {
@@ -18,14 +18,11 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: 'onChange',
   });
-
-  const passwordValue = watch('password') || '';
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -46,33 +43,31 @@ export default function RegisterPage() {
   return (
     <div className="center-page">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18 }}
         className="w-full max-w-md"
       >
-        <Card className="form-card">
-          <div className="text-center space-y-1">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Create an Account</h2>
-            <p className="text-xs text-slate-400">
-              Save chat history and maintain persistent session ownership.
+        <Card className="form-card flex flex-col gap-6">
+          <div className="flex flex-col gap-1.5 text-center">
+            <h2 className="text-2xl font-bold text-[#1A1815] tracking-tight">Create Account</h2>
+            <p className="text-sm text-[#5C574C]">
+              Optional account to save chat logs and view past session history.
             </p>
           </div>
 
           {serverError && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-xs text-red-300">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <div className="p-3 rounded-[10px] bg-[#FBEAE6] border border-[#C23B2E]/20 flex items-center gap-2 text-xs text-[#C23B2E]">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{serverError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <Input
               label="Username"
               placeholder="e.g. alex_dev"
               autoFocus
-              leftIcon={<User className="w-4 h-4" />}
-              helperText="3 to 32 characters, letters, numbers, and underscores."
               error={errors.username?.message}
               {...register('username')}
             />
@@ -80,31 +75,15 @@ export default function RegisterPage() {
             <Input
               type="password"
               label="Password"
-              placeholder="••••••••••••"
-              leftIcon={<Lock className="w-4 h-4" />}
+              placeholder="At least 10 characters"
               error={errors.password?.message}
               {...register('password')}
             />
-
-            {/* Password strength requirement checklist */}
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
-              <div className="flex items-center gap-2 text-[11px]">
-                <CheckCircle2
-                  className={`w-3.5 h-3.5 ${
-                    passwordValue.length >= 10 ? 'text-emerald-400' : 'text-slate-500'
-                  }`}
-                />
-                <span className={passwordValue.length >= 10 ? 'text-slate-200' : 'text-slate-400'}>
-                  At least 10 characters
-                </span>
-              </div>
-            </div>
 
             <Input
               type="password"
               label="Confirm Password"
               placeholder="••••••••••••"
-              leftIcon={<Lock className="w-4 h-4" />}
               error={errors.confirmPassword?.message}
               {...register('confirmPassword')}
             />
@@ -114,16 +93,18 @@ export default function RegisterPage() {
               variant="primary"
               className="w-full py-2.5 mt-2"
               isLoading={isSubmitting}
-              leftIcon={<UserPlus className="w-4 h-4" />}
             >
               Create Account
             </Button>
           </form>
 
-          <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-400 font-semibold hover:underline">
-              Sign In
+          {/* Equal weight links (§9.2) */}
+          <div className="pt-3 border-t border-[#E7E1D3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <Link to="/login" className="text-[#D9720F] hover:underline font-medium">
+              Already have an account? Sign In
+            </Link>
+            <Link to="/" className="text-[#8A8375] hover:text-[#1A1815] transition-colors">
+              Continue as Guest →
             </Link>
           </div>
         </Card>

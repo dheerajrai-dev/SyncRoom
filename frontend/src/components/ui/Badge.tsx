@@ -8,23 +8,23 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({ className, variant = 'default', size = 'md', children, ...props }: BadgeProps) {
   const variantStyles = {
-    default: 'bg-white/10 text-slate-300 border-white/10',
-    success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    danger: 'bg-red-500/10 text-red-400 border-red-500/30',
-    info: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    host: 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-semibold',
+    default: 'bg-[#E7E1D3] text-[#38352F]',
+    success: 'bg-[#E3F3E8] text-[#1F8A4C]',
+    warning: 'bg-[#FBE9D6] text-[#D9720F]',
+    danger: 'bg-[#FBEAE6] text-[#C23B2E]',
+    info: 'bg-[#FBE9D6] text-[#D9720F]',
+    host: 'bg-[#FBE9D6] text-[#D9720F] font-semibold',
   };
 
   const sizeStyles = {
-    sm: 'text-[10px] px-2 py-0.5',
-    md: 'text-xs px-2.5 py-1',
+    sm: 'text-[11px] px-2 py-0.5',
+    md: 'text-xs px-2.5 py-0.5',
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border font-medium tracking-wide select-none',
+        'inline-flex items-center gap-1.5 rounded-full font-medium tracking-wide select-none',
         variantStyles[variant],
         sizeStyles[size],
         className

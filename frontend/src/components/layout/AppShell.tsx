@@ -8,7 +8,7 @@ export interface AppShellProps {
 
 export function AppShell({ children, hideNavbar = false }: AppShellProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-blue-500/30 selection:text-blue-200">
+    <div className="min-h-screen flex flex-col bg-[#F6F2E9] text-[#1A1815] selection:bg-[#FBE9D6] selection:text-[#D9720F]">
       {!hideNavbar && <Navbar />}
       <main className="flex-1 flex flex-col relative w-full">
         {children}

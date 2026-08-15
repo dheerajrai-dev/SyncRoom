@@ -29,6 +29,7 @@ async def get_active_participants(db: AsyncSession, room_id) -> list[Participant
         select(Participant)
         .where(Participant.room_id == room_id)
         .where(Participant.left_at.is_(None))
+        .order_by(Participant.joined_at.asc())
     )
     return list(result.scalars().all())
 

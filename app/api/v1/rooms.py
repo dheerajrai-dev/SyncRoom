@@ -7,7 +7,7 @@ from ...db.participant_repository import create_participant_row, mark_participan
 from ...db.room_repository import create_room_row, get_room_by_code, update_room_locked, update_room_name
 from ...db.message_repository import get_messages_for_room
 from ...db.session import get_db
-from ...schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName, CloseRoomRequest, CreateRoomRequest
+from ...schemas import ApproveRequest, DeniedRequest, JoinRequest, JoinResponse, RoomInfo, Room_Code, RoomName, CloseRoomRequest, CreateRoomRequest, RoomUpdateRequest
 from ...core.security import hash_token
 from ...core.storage import MAX_PARTICIPANTS, generate_code, host_token, participant_id, ws_token, manager
 from ...services.room_service import close_room
@@ -84,12 +84,12 @@ async def join_room(room_code: str, join_request: JoinRequest, db: AsyncSession 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Room is full")
 
     req_id = participant_id()
-    manager.add_pending_request(room_code, req_id, join_request.username)
+    manager.add_pending_request(room_code, req_id, join_request.nickname)
     
     await manager.broadcast_to_room(room_code, {
         "type": "join_request",
         "participant_id": req_id,
-        "nickname": join_request.username
+        "nickname": join_request.nickname
     })
     
     return JoinResponse(participant_id=req_id, pending=True)
@@ -101,13 +101,13 @@ async def get_participants(room_code: str, db: AsyncSession = Depends(get_db), d
     active = await get_active_participants(db, db_room.id)
     for p in active:
         result.append(
-            {"id": str(p.id), "username": p.nickname, "status": "approved"}
+            {"id": str(p.id), "nickname": p.nickname, "status": "approved"}
         )
         
     pending = manager.get_all_pending(room_code)
     for req_id, data in pending.items():
         if isinstance(data, str):
-            result.append({"id": req_id, "username": data, "status": "pending"})
+            result.append({"id": req_id, "nickname": data, "status": "pending"})
         
     return {"participants": result}
 
@@ -180,7 +180,7 @@ async def get_messages(room_code: str, db: AsyncSession = Depends(get_db), db_ro
     db_messages = await get_messages_for_room(db, db_room.id)
     return {
         "messages": [
-            {"username": m.nickname, "content": m.content, "sent_at": m.sent_at.isoformat()}
+            {"nickname": m.nickname, "content": m.content, "sent_at": m.sent_at.isoformat()}
             for m in db_messages
         ]
     }
@@ -201,31 +201,35 @@ async def kick_participant(room_code: str, kick_request: DeniedRequest, db: Asyn
         
     await manager.broadcast_to_room(
         room_code, 
-        {"type": "participant_kicked", "participant_id": kick_request.participant_id, "username": "Participant"}, 
+        {"type": "participant_kicked", "participant_id": kick_request.participant_id, "nickname": "Participant"}, 
         exclude_participant_id=kick_request.participant_id
     )
 
     manager.remove_connection(kick_request.participant_id)
     return {"message": "Participant kicked successfully"}
 
-@router.post("/rooms/{room_code}/lock")
-async def lock_room(room_code: str, db: AsyncSession = Depends(get_db), db_room = Depends(verify_host_token)):
+@router.patch("/rooms/{room_code}")
+async def update_room(
+    room_code: str, 
+    update_request: RoomUpdateRequest, 
+    db: AsyncSession = Depends(get_db), 
+    db_room = Depends(verify_host_token)
+):
     if db_room.status == "host_grace":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_disconnected_actions_frozen")
-    await update_room_locked(db, room_code, True)
-    return {"message": "Room locked successfully"}
-
-@router.post("/rooms/{room_code}/unlock")
-async def unlock_room(room_code: str, db: AsyncSession = Depends(get_db), db_room = Depends(verify_host_token)):
-    if db_room.status == "host_grace":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_disconnected_actions_frozen")
-    await update_room_locked(db, room_code, False)
-    return {"message": "Room unlocked successfully"}
-
-@router.patch("/rooms/{room_code}/rename")
-async def set_room_name(room_code: str, room_name: RoomName, db: AsyncSession = Depends(get_db), db_room = Depends(verify_host_token)):
-    if db_room.status == "host_grace":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_disconnected_actions_frozen")
-    await update_room_name(db, room_code, room_name.name)
-    await manager.broadcast_to_room(room_code, {"type": "room_name_updated", "name": room_name.name})
-    return
+        
+    ws_event = {"type": "room_updated"}
+    
+    if update_request.room_name is not None:
+        await update_room_name(db, room_code, update_request.room_name)
+        ws_event["room_name"] = update_request.room_name
+        
+    if update_request.locked is not None:
+        await update_room_locked(db, room_code, update_request.locked)
+        ws_event["locked"] = update_request.locked
+        
+    # Only broadcast if there was actually an update
+    if len(ws_event) > 1:
+        await manager.broadcast_to_room(room_code, ws_event)
+        
+    return {"message": "Room updated successfully"}

@@ -7,7 +7,7 @@ import { useAuth } from '../features/auth/hooks';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { LogIn, User, Lock, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function LoginPage() {
@@ -42,32 +42,31 @@ export default function LoginPage() {
   return (
     <div className="center-page">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18 }}
         className="w-full max-w-md"
       >
-        <Card className="form-card">
-          <div className="text-center space-y-1">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Sign In to SyncRoom</h2>
-            <p className="text-xs text-slate-400">
-              Access your saved sessions, archived chats, and account settings.
+        <Card className="form-card flex flex-col gap-6">
+          <div className="flex flex-col gap-1.5 text-center">
+            <h2 className="text-2xl font-bold text-[#1A1815] tracking-tight">Sign In</h2>
+            <p className="text-sm text-[#5C574C]">
+              Access saved rooms, archived history, and account settings.
             </p>
           </div>
 
           {serverError && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-xs text-red-300">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <div className="p-3 rounded-[10px] bg-[#FBEAE6] border border-[#C23B2E]/20 flex items-center gap-2 text-xs text-[#C23B2E]">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{serverError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <Input
-              label="Username"
-              placeholder="e.g. alex_dev"
+              label="Username or Email"
+              placeholder="e.g. alex"
               autoFocus
-              leftIcon={<User className="w-4 h-4" />}
               error={errors.username?.message}
               {...register('username')}
             />
@@ -76,7 +75,6 @@ export default function LoginPage() {
               type="password"
               label="Password"
               placeholder="••••••••••"
-              leftIcon={<Lock className="w-4 h-4" />}
               error={errors.password?.message}
               {...register('password')}
             />
@@ -86,16 +84,18 @@ export default function LoginPage() {
               variant="primary"
               className="w-full py-2.5 mt-2"
               isLoading={isSubmitting}
-              leftIcon={<LogIn className="w-4 h-4" />}
             >
               Sign In
             </Button>
           </form>
 
-          <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-blue-400 font-semibold hover:underline">
-              Create Account
+          {/* Equal weight links (§9.1: visually equal weight links) */}
+          <div className="pt-3 border-t border-[#E7E1D3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <Link to="/register" className="text-[#D9720F] hover:underline font-medium">
+              Don't have an account? Sign Up
+            </Link>
+            <Link to="/" className="text-[#8A8375] hover:text-[#1A1815] transition-colors">
+              Continue as Guest →
             </Link>
           </div>
         </Card>

@@ -61,7 +61,7 @@ export type ServerWebSocketMessage =
       room_name: string;
       locked: boolean;
       participants: { participant_id: string; nickname: string }[];
-      messages: { message_id: string; nickname: string; content: string; sent_at: string }[];
+      messages: { message_id: string; participant_id?: string; nickname: string; content: string; sent_at: string }[];
     }
   | {
       type: 'chat_message';

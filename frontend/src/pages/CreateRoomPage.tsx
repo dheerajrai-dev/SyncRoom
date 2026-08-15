@@ -5,16 +5,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createRoomSchema, type CreateRoomFormData } from '../features/room/schemas';
 import { roomApi } from '../features/room/api';
 import { useRoomStore } from '../features/room/roomStore';
-import { useAuth } from '../features/auth/hooks';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { PlusCircle, ArrowLeft, AlertCircle, Sparkles } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function CreateRoomPage() {
   const navigate = useNavigate();
-  const { accessToken, user } = useAuth();
   const setCredentials = useRoomStore((state) => state.setCredentials);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -25,23 +23,24 @@ export default function CreateRoomPage() {
   } = useForm<CreateRoomFormData>({
     resolver: zodResolver(createRoomSchema),
     defaultValues: {
-      roomName: user ? `${user.display_name || user.username}'s Room` : 'Quick Sync',
+      roomName: '',
     },
   });
 
   const onSubmit = async (data: CreateRoomFormData) => {
     try {
       setServerError(null);
-      const res = await roomApi.createRoom(data.roomName, accessToken);
+      const name = data.roomName?.trim() || 'Quick Sync';
+      const res = await roomApi.createRoom(name);
 
-      // Store credentials into Zustand roomStore
+      // Store credentials into Zustand roomStore & sessionStorage
       setCredentials({
         roomCode: res.code,
         role: 'host',
         hostToken: res.host_token,
-        wsToken: res.host_token, // Host connects with host_token as token
-        nickname: user?.display_name || user?.username || 'Host',
-        roomName: data.roomName,
+        wsToken: res.host_token,
+        nickname: 'Host',
+        roomName: name,
       });
 
       navigate(`/room/${res.code}`);
@@ -53,43 +52,39 @@ export default function CreateRoomPage() {
   return (
     <div className="center-page">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18 }}
         className="w-full max-w-md"
       >
-        <Card className="form-card">
+        <Card className="form-card flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-[#8A8375] hover:text-[#1A1815] transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </Link>
-            <span className="text-[11px] font-medium text-blue-400 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              Host Workspace
-            </span>
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Create a Room</h2>
-            <p className="text-xs text-slate-400">
-              Start a new session and share the invite code with collaborators.
+          <div className="flex flex-col gap-1.5">
+            <h2 className="text-2xl font-bold text-[#1A1815] tracking-tight">Create a Room</h2>
+            <p className="text-sm text-[#5C574C]">
+              Start an ephemeral workspace and share the code with collaborators.
             </p>
           </div>
 
           {serverError && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-xs text-red-300">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <div className="p-3 rounded-[10px] bg-[#FBEAE6] border border-[#C23B2E]/20 flex items-center gap-2 text-xs text-[#C23B2E]">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{serverError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <Input
-              label="Room Name"
+              label="Room Name (Optional)"
               placeholder="e.g. Design Critique"
               autoFocus
               error={errors.roomName?.message}
@@ -101,9 +96,8 @@ export default function CreateRoomPage() {
               variant="primary"
               className="w-full py-2.5 mt-2"
               isLoading={isSubmitting}
-              leftIcon={<PlusCircle className="w-4 h-4" />}
             >
-              Create & Launch Room
+              Create Room
             </Button>
           </form>
         </Card>

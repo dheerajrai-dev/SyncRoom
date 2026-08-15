@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import ValidationError
-from ..schemas import chat_Message
+from ..schemas import ClientMessage
 from ..core.security import verify_token
 from ..db.session import get_db
 from ..db.room_repository import get_room_by_code, get_room_by_id
@@ -21,18 +21,17 @@ router = APIRouter()
 
 async def build_room_state(db: AsyncSession, db_room) -> dict:
     active = await get_active_participants(db, db_room.id)
-    db_messages = await get_messages_for_room(db, db_room.id)
+    # Pull messages from memory instead of DB
+    in_memory_messages = manager.get_messages(db_room.room_code)
     
     return {
         "type": "room_state",
         "room_name": db_room.room_name,
+        "locked": db_room.locked,
         "participants": [
-            {"participant_id": str(p.id), "username": p.nickname} for p in active
+            {"participant_id": str(p.id), "nickname": p.nickname} for p in active
         ],
-        "messages": [
-            {"username": m.nickname, "content": m.content, "sent_at": m.sent_at.isoformat()}
-            for m in db_messages
-        ]
+        "messages": in_memory_messages
     }
 
 async def host_grace_timer(room_code: str, disconnected_at: datetime, participant_id: str):
@@ -49,18 +48,13 @@ async def host_grace_timer(room_code: str, disconnected_at: datetime, participan
     if current_disconnect != disconnected_at:
         return # New disconnect happened
         
-    # Still disconnected
-    from ..db.session import AsyncSessionLocal
-    from ..services.room_service import close_room
-    async with AsyncSessionLocal() as db:
-        db_room = await get_room_by_code(db, room_code)
-        if db_room:
-            await close_room(db, str(db_room.id), save=False, reason="host_disconnect_grace_expired")
+    # Still disconnected, close and delete room
+    await close_and_delete_room(room_code)
 
-@router.websocket("/ws/{room_id}")
-async def websocket_room(websocket: WebSocket, room_id: str, token: str, db: AsyncSession = Depends(get_db)):
+@router.websocket("/ws/{room_code}")
+async def websocket_room(websocket: WebSocket, room_code: str, token: str, db: AsyncSession = Depends(get_db)):
     try:
-        db_room = await get_room_by_id(db, room_id)
+        db_room = await get_room_by_code(db, room_code)
     except Exception:
         db_room = None
         
@@ -145,44 +139,67 @@ async def websocket_room(websocket: WebSocket, room_id: str, token: str, db: Asy
             exclude_participant_id=participant_id
         )
 
-    try:
-        while True:
-            data = await websocket.receive_text()
-            try:
-                incoming = chat_Message.model_validate_json(data)
-                await process_chat_message(
-                    room_id=db_room.id,
-                    participant_db_id=participant_id,
-                    username=username,
-                    content=incoming.content,
-                    room_code=room_code
-                )
-            except ValidationError:
-                await websocket.send_text("Invalid message format")
-    except WebSocketDisconnect:
-        manager.mark_disconnected(participant_id)
-        disconnect_time = manager.get_connection(participant_id)["disconnected_at"]
-        
-        if is_host:
-            # Start host grace timer
-            from ..db.room_repository import update_room_status
-            from ..db.session import AsyncSessionLocal
-            async with AsyncSessionLocal() as db_session:
-                await update_room_status(db_session, room_code, 'host_grace')
+        from pydantic import TypeAdapter
+        from ..schemas import ClientMessage
+        message_adapter = TypeAdapter(ClientMessage)
+        try:
+            while True:
+                data = await websocket.receive_text()
+                try:
+                    incoming = message_adapter.validate_json(data)
+                    if incoming.type == "chat_message":
+                        chat_content = incoming.get_content()
+                        if chat_content:
+                            await process_chat_message(
+                                participant_db_id=participant_id,
+                                username=username,
+                                content=chat_content,
+                                room_code=room_code
+                            )
+                    elif incoming.type == "edit_message":
+                        msg_id, edit_content = incoming.get_data()
+                        if msg_id and edit_content:
+                            if manager.edit_message(room_code, msg_id, edit_content):
+                                await manager.broadcast_to_room(room_code, {
+                                    "type": "message_edited",
+                                    "message_id": msg_id,
+                                    "content": edit_content
+                                })
+                    elif incoming.type == "delete_message":
+                        del_msg_id = incoming.get_message_id()
+                        if del_msg_id and manager.delete_message(room_code, del_msg_id):
+                            await manager.broadcast_to_room(room_code, {
+                                "type": "message_deleted",
+                                "message_id": del_msg_id
+                            })
+                    elif incoming.type == "presence_ping":
+                        await websocket.send_json({"type": "presence_pong"})
+                except ValidationError:
+                    await websocket.send_text("Invalid message format")
+        except WebSocketDisconnect:
+            manager.mark_disconnected(participant_id)
+            disconnect_time = manager.get_connection(participant_id)["disconnected_at"]
+            
+            if is_host:
+                # Start host grace timer
+                from ..db.room_repository import update_room_status
+                from ..db.session import AsyncSessionLocal
+                async with AsyncSessionLocal() as db_session:
+                    await update_room_status(db_session, room_code, 'host_grace')
+                    
+                task = asyncio.create_task(host_grace_timer(room_code, disconnect_time, participant_id))
+                manager.get_connection(participant_id)["reconnect_task"] = task
                 
-            task = asyncio.create_task(host_grace_timer(room_code, disconnect_time, participant_id))
-            manager.get_connection(participant_id)["reconnect_task"] = task
-            
-            from datetime import timedelta
-            grace_expires_at = disconnect_time + timedelta(seconds=HOST_RECONNECT_GRACE_PERIOD_SECONDS)
-            
-            await manager.broadcast_to_room(room_code, {
-                "type": "host_disconnected_grace_started",
-                "grace_expires_at": grace_expires_at.isoformat()
-            })
-        else:
-            await manager.broadcast_to_room(
-                room_code,
-                {"type": "participant_left", "participant_id": participant_id},
-                exclude_participant_id=participant_id
-            )
+                from datetime import timedelta
+                grace_expires_at = disconnect_time + timedelta(seconds=HOST_RECONNECT_GRACE_PERIOD_SECONDS)
+                
+                await manager.broadcast_to_room(room_code, {
+                    "type": "host_disconnected_grace_started",
+                    "grace_expires_at": grace_expires_at.isoformat()
+                })
+            else:
+                await manager.broadcast_to_room(
+                    room_code,
+                    {"type": "participant_left", "participant_id": participant_id},
+                    exclude_participant_id=participant_id
+                )

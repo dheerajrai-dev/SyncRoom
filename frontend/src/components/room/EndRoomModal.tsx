@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
-import { Archive, Trash2, LogOut, AlertTriangle } from 'lucide-react';
 import type { RoomRole } from '../../features/room/types';
+import { Trash2, BookmarkCheck, Info } from 'lucide-react';
 
 export interface EndRoomModalProps {
   isOpen: boolean;
@@ -39,27 +38,30 @@ export function EndRoomModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title="Leave Room"
+        title="Leave Room?"
         description="Are you sure you want to leave this session?"
       >
-        <div className="space-y-4 pt-2">
-          <p className="text-sm text-slate-300">
-            You can rejoin anytime using the room code if the room remains active and unlocked.
+        <div className="flex flex-col gap-4 pt-2">
+          <p className="text-sm text-[#5C574C]">
+            You can rejoin anytime using the room code if the room remains active.
           </p>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="text-xs text-[#8A8375] hover:text-[#1A1815] transition-colors cursor-pointer"
+            >
               Cancel
-            </Button>
-            <Button
-              variant="danger"
+            </button>
+            <button
               onClick={() => {
                 onLeaveRoom();
                 onClose();
               }}
-              leftIcon={<LogOut className="w-4 h-4" />}
+              className="btn btn-secondary text-xs"
             >
               Leave Room
-            </Button>
+            </button>
           </div>
         </div>
       </Modal>
@@ -70,76 +72,76 @@ export function EndRoomModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="End Room Session"
-      description="Choose how you want to close this room for all participants."
+      title="End Room?"
+      description="Choose how you want to close this session for all participants."
     >
-      <div className="space-y-4 pt-2">
-        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-200">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <span>Ending the session will immediately disconnect all connected participants.</span>
-        </div>
+      <div className="flex flex-col gap-5 pt-2">
+        {isAuthenticated ? (
+          /* Logged-In User Options: Delete Everything vs Save Chat Log */
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={() => handleAction(false)}
+              disabled={isSubmitting}
+              className="p-4 rounded-[10px] border border-[#C23B2E] text-[#C23B2E] hover:bg-[#FBEAE6] transition-colors text-left flex flex-col gap-1.5 cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5">
+                <Trash2 className="w-4 h-4" />
+                <span className="font-semibold text-sm">Delete Everything</span>
+              </div>
+              <span className="text-xs text-[#8A8375] leading-relaxed">
+                Wipe in-memory messages and close room immediately.
+              </span>
+            </button>
 
-        <div className="space-y-2.5 pt-1">
-          {isAuthenticated ? (
-            <>
-              <button
-                onClick={() => handleAction(true)}
-                disabled={isSubmitting}
-                className="w-full text-left p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all flex items-center justify-between group cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
-                    <Archive className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">Save & Archive to Dashboard</p>
-                    <p className="text-xs text-slate-400">
-                      Save room messages to your dashboard for later viewing and export.
-                    </p>
-                  </div>
-                </div>
-              </button>
+            <button
+              onClick={() => handleAction(true)}
+              disabled={isSubmitting}
+              className="p-4 rounded-[10px] border border-[#1A1815] text-[#1A1815] hover:bg-[#F6F2E9] transition-colors text-left flex flex-col gap-1.5 cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5">
+                <BookmarkCheck className="w-4 h-4 text-[#D9720F]" />
+                <span className="font-semibold text-sm">Save Chat Log</span>
+              </div>
+              <span className="text-xs text-[#8A8375] leading-relaxed">
+                Archive transcript to your account dashboard.
+              </span>
+            </button>
+          </div>
+        ) : (
+          /* Guest User: Save Chat Log is NOT available for guests */
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => handleAction(false)}
+              disabled={isSubmitting}
+              className="w-full p-4 rounded-[10px] border border-[#C23B2E] text-[#C23B2E] hover:bg-[#FBEAE6] transition-colors text-left flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <Trash2 className="w-4 h-4" />
+                <span className="font-semibold text-sm">Delete Everything & End Room</span>
+              </div>
+              <span className="text-xs text-[#8A8375]">
+                Wipe all in-memory messages and permanently close this session.
+              </span>
+            </button>
 
-              <button
-                onClick={() => handleAction(false)}
-                disabled={isSubmitting}
-                className="w-full text-left p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 transition-all flex items-center justify-between group cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400">
-                    <Trash2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-red-300">Delete Immediately</p>
-                    <p className="text-xs text-slate-400">
-                      Permanently wipe all session messages and close the room.
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-slate-400">
-                As a guest host, ending this room will permanently delete all messages and close the session.
-              </p>
-              <Button
-                variant="danger"
-                className="w-full py-2.5"
-                isLoading={isSubmitting}
-                onClick={() => handleAction(false)}
-                leftIcon={<Trash2 className="w-4 h-4" />}
-              >
-                End & Delete Room
-              </Button>
+            <div className="p-3 rounded-[10px] bg-[#F6F2E9] border border-[#E7E1D3] flex items-start gap-2 text-xs text-[#5C574C]">
+              <Info className="w-4 h-4 text-[#8A8375] shrink-0 mt-0.5" />
+              <span>
+                <strong>Guest Mode:</strong> Chat log archiving is available only for registered accounts.
+              </span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="flex justify-end pt-2 border-t border-white/5">
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting}>
+        {/* Cancel Text Link */}
+        <div className="flex justify-center pt-1">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="text-xs text-[#8A8375] hover:text-[#1A1815] transition-colors cursor-pointer"
+          >
             Cancel
-          </Button>
+          </button>
         </div>
       </div>
     </Modal>

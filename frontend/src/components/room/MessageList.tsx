@@ -44,18 +44,18 @@ export function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500">
-        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 mb-3">
-          <MessageSquare className="w-6 h-6" />
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#8A8375]">
+        <div className="w-10 h-10 rounded-full bg-[#F6F2E9] border border-[#E7E1D3] flex items-center justify-center text-[#8A8375] mb-3">
+          <MessageSquare className="w-5 h-5" />
         </div>
-        <p className="text-sm font-medium text-slate-300">No messages yet</p>
-        <p className="text-xs text-slate-500 mt-1">Start the conversation by sending a message below.</p>
+        <p className="text-sm font-medium text-[#1A1815]">Workspace ready</p>
+        <p className="text-xs text-[#8A8375] mt-1">Send a message to begin collaborative discussion.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4">
       <AnimatePresence initial={false}>
         {messages.map((msg) => {
           const isOwn =
@@ -67,85 +67,74 @@ export function MessageList({
           return (
             <motion.div
               key={msg.message_id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className={`flex flex-col group ${isOwn ? 'items-end' : 'items-start'}`}
+              transition={{ duration: 0.12 }}
+              className="flex flex-col gap-1 group relative"
             >
-              {/* Sender & Timestamp Header */}
-              <div className="flex items-center gap-2 px-1 mb-1 text-xs text-slate-400">
-                <span className={`font-semibold ${isOwn ? 'text-blue-400' : 'text-slate-300'}`}>
-                  {isOwn ? 'You' : msg.nickname}
-                </span>
-                <span>{formatTime(msg.sent_at)}</span>
-                {msg.edited && <span className="text-[10px] text-slate-500 italic">(edited)</span>}
+              {/* Sender & Timestamp Header (§7.6: inline sender + meta, no bubbles) */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-semibold text-[#1A1815]">{msg.nickname}</span>
+                {isOwn && (
+                  <span className="text-[11px] font-semibold text-[#D9720F]">You</span>
+                )}
+                <span className="text-[11px] text-[#8A8375] font-mono">{formatTime(msg.sent_at)}</span>
+                {msg.edited && <span className="text-[10px] text-[#8A8375] italic">(edited)</span>}
               </div>
 
-              {/* Message Bubble */}
-              <div className="relative max-w-[85%] sm:max-w-[70%]">
-                {isEditing ? (
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900 border border-blue-500/40">
-                    <input
-                      type="text"
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="input-field py-1 text-sm"
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => handleSaveEdit(msg.message_id)}
-                      className="p-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-md"
-                      title="Save Edit"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="p-1 text-slate-400 hover:text-white hover:bg-white/10 rounded-md"
-                      title="Cancel"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
-                      isOwn
-                        ? 'bg-blue-600/90 text-white rounded-br-xs shadow-md border border-blue-500/30'
-                        : 'bg-white/5 text-slate-200 rounded-bl-xs border border-white/10'
-                    }`}
+              {/* Message Content (§7.6: flat message text in --graphite) */}
+              {isEditing ? (
+                <div className="flex items-center gap-2 p-2 rounded-[10px] bg-[#FFFDF8] border border-[#D9720F] max-w-xl">
+                  <input
+                    type="text"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="input-field py-1 text-sm flex-1"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => handleSaveEdit(msg.message_id)}
+                    className="p-1 text-[#1F8A4C] hover:bg-[#E3F3E8] rounded-md transition-colors cursor-pointer"
+                    title="Save Edit"
                   >
-                    {msg.content}
-                  </div>
-                )}
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="p-1 text-[#8A8375] hover:text-[#1A1815] hover:bg-[#F6F2E9] rounded-md transition-colors cursor-pointer"
+                    title="Cancel"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-base text-[#38352F] leading-relaxed break-words max-w-3xl">
+                  {msg.content}
+                </div>
+              )}
 
-                {/* Message action controls on hover */}
-                {!isEditing && canManage && (
-                  <div
-                    className={`absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-900/90 border border-slate-700/60 rounded-md p-0.5 shadow-lg ${
-                      isOwn ? '-left-14 -translate-x-full' : '-right-14 translate-x-full'
-                    }`}
-                  >
-                    {isOwn && (
-                      <button
-                        onClick={() => handleStartEdit(msg)}
-                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10 transition-colors"
-                        title="Edit Message"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+              {/* Action Controls on hover */}
+              {!isEditing && canManage && (
+                <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-[#FFFDF8] border border-[#E7E1D3] rounded-[8px] p-1 shadow-xs">
+                  {isOwn && (
                     <button
-                      onClick={() => onDeleteMessage(msg.message_id)}
-                      className="p-1 text-red-400 hover:text-red-300 rounded hover:bg-red-500/10 transition-colors"
-                      title="Delete Message"
+                      onClick={() => handleStartEdit(msg)}
+                      className="p-1 text-[#8A8375] hover:text-[#1A1815] hover:bg-[#F6F2E9] rounded transition-colors cursor-pointer"
+                      title="Edit Message"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                  <button
+                    onClick={() => onDeleteMessage(msg.message_id)}
+                    className="p-1 text-[#C23B2E] hover:bg-[#FBEAE6] rounded transition-colors cursor-pointer"
+                    title="Delete Message"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </motion.div>
           );
         })}

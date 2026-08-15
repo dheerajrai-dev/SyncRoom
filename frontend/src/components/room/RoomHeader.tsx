@@ -57,13 +57,13 @@ export function RoomHeader({
 
   const connectionBadges = {
     connected: <Badge variant="success" size="sm">● Connected</Badge>,
-    connecting: <Badge variant="info" size="sm">◌ Connecting...</Badge>,
+    connecting: <Badge variant="warning" size="sm">◌ Connecting...</Badge>,
     reconnecting: <Badge variant="warning" size="sm">◌ Reconnecting...</Badge>,
     disconnected: <Badge variant="danger" size="sm">✕ Disconnected</Badge>,
   };
 
   return (
-    <div className="border-b border-white/10 bg-slate-950/60 backdrop-blur-md px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 z-20">
+    <div className="border-b border-[#E7E1D3] bg-[#FFFDF8] px-4 sm:px-6 py-3 flex items-center justify-between gap-4 z-20">
       {/* Left: Room Title & Code */}
       <div className="flex items-center gap-3 min-w-0">
         {isEditingName ? (
@@ -76,26 +76,24 @@ export function RoomHeader({
               autoFocus
               maxLength={50}
             />
-            <Button type="submit" size="sm" variant="primary" isLoading={isSavingName} className="p-1.5">
-              <Check className="w-4 h-4" />
-            </Button>
-            <Button
+            <button type="submit" disabled={isSavingName} className="btn btn-secondary py-1 px-2 text-xs">
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
               type="button"
-              size="sm"
-              variant="ghost"
               onClick={() => {
                 setIsEditingName(false);
                 setTempName(roomName || '');
               }}
-              className="p-1.5"
+              className="btn btn-ghost py-1 px-2 text-xs"
             >
               ✕
-            </Button>
+            </button>
           </form>
         ) : (
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-white truncate">
-              {roomName || 'SyncRoom Session'}
+            <h1 className="text-base font-bold text-[#1A1815] truncate">
+              {roomName || 'SyncRoom Workspace'}
             </h1>
             {isHost && (
               <button
@@ -103,7 +101,7 @@ export function RoomHeader({
                   setTempName(roomName || '');
                   setIsEditingName(true);
                 }}
-                className="p-1 text-slate-400 hover:text-white rounded-md hover:bg-white/5 transition-colors cursor-pointer"
+                className="p-1 text-[#8A8375] hover:text-[#1A1815] transition-colors cursor-pointer"
                 title="Rename Room"
               >
                 <Edit2 className="w-3.5 h-3.5" />
@@ -116,34 +114,33 @@ export function RoomHeader({
         {roomCode && (
           <button
             onClick={handleCopyCode}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F6F2E9] border border-[#E7E1D3] text-xs font-mono text-[#1A1815] hover:border-[#D6CFC0] transition-colors cursor-pointer shrink-0"
             title="Click to copy room code"
           >
-            <span className="font-semibold text-blue-400">{roomCode}</span>
+            <span className="font-semibold text-[#D9720F]">{roomCode}</span>
             {isCopied ? (
-              <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <CheckCheck className="w-3.5 h-3.5 text-[#1F8A4C]" />
             ) : (
-              <Copy className="w-3.5 h-3.5 text-slate-400" />
+              <Copy className="w-3.5 h-3.5 text-[#8A8375]" />
             )}
           </button>
         )}
       </div>
 
-      {/* Right: Controls & Status */}
+      {/* Right: Host Controls & Actions (all ghost per §6.8) */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Connection status badge */}
         <div className="hidden sm:block">
           {connectionBadges[connectionState]}
         </div>
 
-        {/* Host lock toggle */}
+        {/* Host lock toggle (ghost button) */}
         {isHost && onToggleLock && (
           <Button
-            variant="secondary"
+            variant="ghost"
             size="sm"
             onClick={onToggleLock}
-            className="hidden sm:inline-flex text-xs py-1.5"
-            leftIcon={locked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5 text-slate-400" />}
+            className="hidden sm:inline-flex text-xs py-1.5 border border-[#1A1815]"
+            leftIcon={locked ? <Lock className="w-3.5 h-3.5 text-[#D9720F]" /> : <Unlock className="w-3.5 h-3.5 text-[#5C574C]" />}
           >
             {locked ? 'Locked' : 'Unlocked'}
           </Button>
@@ -153,22 +150,22 @@ export function RoomHeader({
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition-colors"
+            className="lg:hidden p-2 rounded-[10px] text-[#38352F] hover:bg-[#F6F2E9] border border-[#E7E1D3] transition-colors"
             title="Toggle Participants"
           >
             <Users className="w-4 h-4" />
           </button>
         )}
 
-        {/* End / Leave Session */}
+        {/* End / Leave Session (ghost destructive / secondary) */}
         <Button
-          variant="danger"
+          variant={isHost ? 'danger' : 'ghost'}
           size="sm"
           onClick={onOpenEndModal}
           className="text-xs py-1.5"
           leftIcon={<LogOut className="w-3.5 h-3.5" />}
         >
-          {isHost ? 'End Session' : 'Leave'}
+          {isHost ? 'End Room' : 'Leave'}
         </Button>
       </div>
     </div>
