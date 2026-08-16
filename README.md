@@ -25,12 +25,12 @@ SyncRoom allows users to create temporary or persistent rooms, manage participan
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Async Python)
 - **Database**: [PostgreSQL 16](https://www.postgresql.org/) + `asyncpg` + [SQLAlchemy 2.0](https://www.sqlalchemy.org/)
 - **Migrations**: [Alembic](https://alembic.sqlalchemy.org/)
-- **Authentication**: `PyJWT` + `Passlib` (Argon2 / Bcrypt)
+- **Authentication**: `PyJWT` + `Passlib` (Argon2)
 - **Real-Time**: Native FastAPI WebSockets
 
 ### **Frontend**
 - **Framework**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/)
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) (Global auth session & active real-time room state)
 - **Routing**: `React Router v7`
 - **Styling**: Modern CSS Tokens & Custom Component Library
 
@@ -77,7 +77,7 @@ SyncRoom/
 ### Prerequisites
 
 - [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-- [Node.js](https://nodejs.org/) (v18+ recommended)
+- [Node.js](https://nodejs.org/) (v18+ recommended — required to build & run the Vite frontend via `npm`)
 - [Python](https://www.python.org/) (3.11+ if running backend outside Docker)
 
 ---
