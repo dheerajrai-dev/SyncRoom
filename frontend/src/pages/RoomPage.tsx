@@ -51,7 +51,7 @@ export default function RoomPage() {
       return;
     }
 
-    if (!hasValidSession) {
+    if (!hasValidSession && !isClosing) {
       // 1. Check if sessionStorage has saved session credentials for this room (e.g. host refresh)
       const stored = getStoredSession(roomCode);
       if (stored && (stored.wsToken || stored.hostToken)) {
@@ -64,12 +64,9 @@ export default function RoomPage() {
           participantId: stored.participantId,
           roomName: stored.roomName,
         });
-      } else {
-        // Not joined or session expired -> redirect to join
-        navigate(`/join?code=${roomCode}`);
       }
     }
-  }, [roomCode, hasValidSession, navigate, setCredentials]);
+  }, [roomCode, hasValidSession, isClosing, navigate, setCredentials]);
 
   // Connect WebSocket only when session credentials exist
   const {
@@ -89,14 +86,15 @@ export default function RoomPage() {
   } = useRoomActions();
 
   const handleEndRoom = async (save: boolean) => {
+    const target = isAuthenticated && save ? '/dashboard' : '/';
     await endRoom(save);
     resetRoom();
-    navigate(isAuthenticated && save ? '/dashboard' : '/');
+    navigate(target, { replace: true });
   };
 
   const handleLeaveRoom = () => {
     resetRoom();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   if (!hasValidSession) {

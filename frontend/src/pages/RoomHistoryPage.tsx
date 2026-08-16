@@ -185,9 +185,11 @@ export default function RoomHistoryPage() {
             <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-[#1A1815]">{room.room_name}</h1>
-                <span className="text-xs font-mono text-[#D9720F] px-2 py-0.5 rounded bg-[#FBE9D6]">
-                  #{room.room_code}
-                </span>
+                {room.room_code && (
+                  <span className="text-xs font-mono text-[#D9720F] px-2 py-0.5 rounded bg-[#FBE9D6]">
+                    #{room.room_code}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3 text-xs text-[#8A8375]">
                 <span className="flex items-center gap-1">
@@ -226,9 +228,11 @@ export default function RoomHistoryPage() {
             </Button>
 
             <button
+              type="button"
               onClick={() => setIsDeleteModalOpen(true)}
               className="p-2 text-[#C23B2E] hover:bg-[#FBEAE6] rounded-[8px] transition-colors cursor-pointer"
               title="Delete Archived Room"
+              aria-label="Delete Archived Room"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -265,6 +269,7 @@ export default function RoomHistoryPage() {
                   <span>Executive Summary</span>
                 </div>
                 <button
+                  type="button"
                   onClick={handleGenerateSummary}
                   className="text-xs text-[#8A8375] hover:text-[#1A1815] transition-colors cursor-pointer"
                 >
@@ -349,6 +354,7 @@ export default function RoomHistoryPage() {
       >
         <div className="surface-card divide-y divide-[#E7E1D3] overflow-hidden my-2">
           <button
+            type="button"
             onClick={() => handleDownloadFile('md')}
             className="w-full p-3.5 flex items-center justify-between hover:bg-[#F6F2E9] transition-colors text-left cursor-pointer"
           >
@@ -363,6 +369,7 @@ export default function RoomHistoryPage() {
           </button>
 
           <button
+            type="button"
             onClick={() => handleDownloadFile('json')}
             className="w-full p-3.5 flex items-center justify-between hover:bg-[#F6F2E9] transition-colors text-left cursor-pointer"
           >
@@ -377,6 +384,7 @@ export default function RoomHistoryPage() {
           </button>
 
           <button
+            type="button"
             onClick={() => handleDownloadFile('txt')}
             className="w-full p-3.5 flex items-center justify-between hover:bg-[#F6F2E9] transition-colors text-left cursor-pointer"
           >
@@ -393,6 +401,7 @@ export default function RoomHistoryPage() {
 
         <div className="flex justify-end pt-2">
           <button
+            type="button"
             onClick={() => setIsExportModalOpen(false)}
             className="text-xs text-[#8A8375] hover:text-[#1A1815] cursor-pointer"
           >
@@ -414,6 +423,7 @@ export default function RoomHistoryPage() {
           </p>
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
+              type="button"
               onClick={() => setIsDeleteModalOpen(false)}
               disabled={deleteMutation.isPending}
               className="text-xs text-[#8A8375] hover:text-[#1A1815] cursor-pointer"

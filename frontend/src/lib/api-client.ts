@@ -2,10 +2,6 @@ export function getApiBaseUrl(): string {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  const host = typeof window !== 'undefined' ? window.location.host : '';
-  if (host.includes('5173') || host.includes('5174')) {
-    return 'http://localhost:8000/api/v1';
-  }
   return '/api/v1';
 }
 
@@ -14,17 +10,25 @@ export function getWsBaseUrl(): string {
     return import.meta.env.VITE_WS_BASE_URL;
   }
   const protocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = typeof window !== 'undefined' ? window.location.host : '';
-  if (host.includes('5173') || host.includes('5174')) {
-    return `${protocol}//localhost:8000/api/v1/ws`;
-  }
-  return `${protocol}//${host}/api/v1/ws`;
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const port = typeof window !== 'undefined' && (window.location.port === '5173' || window.location.port === '5174') ? '8000' : window.location.port;
+  return `${protocol}//${hostname}${port ? `:${port}` : ''}/api/v1/ws`;
 }
 
 export interface RequestOptions extends RequestInit {
   token?: string | null;
   hostToken?: string | null;
   params?: Record<string, string | number | boolean | undefined | null>;
+}
+
+let currentAccessToken: string | null = null;
+
+export function setApiAccessToken(token: string | null) {
+  currentAccessToken = token;
+}
+
+export function getApiAccessToken(): string | null {
+  return currentAccessToken;
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -50,8 +54,9 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     ...(headers as Record<string, string>),
   };
 
-  if (token) {
-    reqHeaders['Authorization'] = `Bearer ${token}`;
+  const effectiveToken = token !== undefined ? token : currentAccessToken;
+  if (effectiveToken) {
+    reqHeaders['Authorization'] = `Bearer ${effectiveToken}`;
   }
 
   if (hostToken) {

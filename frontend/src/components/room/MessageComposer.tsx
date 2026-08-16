@@ -33,32 +33,30 @@ export function MessageComposer({
   };
 
   return (
-    <div className="border-t border-[#E7E1D3] bg-[#FFFDF8] px-4 sm:px-6 py-3 sm:py-3.5 shrink-0">
+    <div className="border-t border-[#E7E1D3] bg-[#FFFDF8] px-4 py-3 shrink-0">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-4xl mx-auto flex items-end gap-2.5 sm:gap-3"
+        className="w-full max-w-3xl mx-auto flex items-center gap-2.5"
       >
-        <div className="flex-1 relative">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isDisabled}
-            placeholder={
-              !isConnected
-                ? 'Reconnecting to room...'
-                : 'Type your message... (Enter to send, Shift+Enter for newline)'
-            }
-            className="w-full input-field py-2.5 px-3.5 text-sm sm:text-base resize-none h-11 max-h-32 overflow-y-auto leading-relaxed border-[#D6CFC0] focus:border-[#D9720F] rounded-[12px]"
-            rows={1}
-            maxLength={1000}
-          />
-        </div>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={isDisabled}
+          placeholder={
+            !isConnected
+              ? 'Reconnecting to room...'
+              : 'Type a message... (Enter to send, Shift+Enter for newline)'
+          }
+          className="flex-1 input-field py-2 px-3.5 text-sm sm:text-base resize-none h-11 max-h-28 overflow-y-auto leading-relaxed border-[#D6CFC0] focus:border-[#D9720F] rounded-[10px] bg-[#FFFDF8]"
+          rows={1}
+          maxLength={1000}
+        />
 
         <button
           type="submit"
           disabled={isDisabled || !content.trim()}
-          className="btn btn-filled-primary h-11 px-4 sm:px-5 shrink-0 flex items-center justify-center gap-1.5 shadow-subtle cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="btn btn-filled-primary h-11 w-11 p-0 shrink-0 flex items-center justify-center rounded-[10px] shadow-subtle cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           title="Send message"
         >
           <Send className="w-4 h-4 text-[#FFFDF8]" />

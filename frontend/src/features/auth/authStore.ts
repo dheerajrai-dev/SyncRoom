@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from './api';
+import { setApiAccessToken } from '../../lib/api-client';
 import type { AuthState, UserProfile } from './types';
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -12,6 +13,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ status: 'loading' });
       const refreshRes = await authApi.refresh();
       const token = refreshRes.access_token;
+      setApiAccessToken(token);
       
       const user = await authApi.getMe(token);
       set({
@@ -20,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user,
       });
     } catch {
+      setApiAccessToken(null);
       set({
         status: 'unauthenticated',
         accessToken: null,
@@ -30,6 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (username: string, password: string): Promise<UserProfile> => {
     const res = await authApi.login(username, password);
+    setApiAccessToken(res.access_token);
     set({
       status: 'authenticated',
       accessToken: res.access_token,
@@ -48,6 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (err) {
       console.warn('Logout API error:', err);
     } finally {
+      setApiAccessToken(null);
       set({
         status: 'unauthenticated',
         accessToken: null,
@@ -61,6 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setAccessToken: (accessToken: string | null) => {
+    setApiAccessToken(accessToken);
     set({ accessToken });
   },
 }));

@@ -49,7 +49,7 @@ export default function ProfilePage() {
     navigate('/');
   };
 
-  const initialLetter = (user?.display_name || user?.username || 'U').charAt(0).toUpperCase();
+  const initialLetter = (user?.display_name?.trim() || user?.username?.trim() || 'U').charAt(0).toUpperCase() || 'U';
 
   return (
     <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-6 py-10 sm:py-14">
@@ -125,6 +125,7 @@ export default function ProfilePage() {
                     <span className="text-sm font-semibold text-[#1A1815]">{user?.display_name || user?.username}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setIsEditing(true)}
                     className="btn btn-ghost text-xs py-1 px-2.5 flex items-center gap-1 cursor-pointer"
                   >

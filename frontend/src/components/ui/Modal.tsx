@@ -58,6 +58,10 @@ export function Modal({
 
           {/* Modal Content (§6.10: --paper surface, --fog hairline border, 18px radius) */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? 'modal-title' : undefined}
+            aria-describedby={description ? 'modal-description' : undefined}
             className={cn(
               'relative z-10 w-full surface-modal bg-[#FFFDF8] border border-[#E7E1D3] p-6 shadow-md rounded-[18px] text-[#1A1815] overflow-hidden',
               maxWClasses[maxWidth]
@@ -69,13 +73,15 @@ export function Modal({
           >
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
-                {title && <h3 className="text-lg font-bold text-[#1A1815]">{title}</h3>}
-                {description && <p className="text-xs sm:text-sm text-[#5C574C] mt-1">{description}</p>}
+                {title && <h3 id="modal-title" className="text-lg font-bold text-[#1A1815]">{title}</h3>}
+                {description && <p id="modal-description" className="text-xs sm:text-sm text-[#5C574C] mt-1">{description}</p>}
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-1 rounded-[8px] text-[#8A8375] hover:text-[#1A1815] hover:bg-[#F6F2E9] transition-colors cursor-pointer"
                 title="Close"
+                aria-label="Close dialog"
               >
                 <X className="w-4 h-4" />
               </button>

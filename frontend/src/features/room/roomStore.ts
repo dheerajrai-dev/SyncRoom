@@ -134,6 +134,10 @@ export const useRoomStore = create<RoomStoreState>((set, get) => ({
       participantId: mergedCredentials.participantId || null,
       nickname: mergedCredentials.nickname || null,
       roomName: mergedCredentials.roomName || null,
+      isHostGrace: false,
+      graceExpiresAt: null,
+      isClosing: false,
+      closeReason: null,
     });
   },
 
