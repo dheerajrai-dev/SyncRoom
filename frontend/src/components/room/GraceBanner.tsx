@@ -47,7 +47,7 @@ export function GraceBanner({ isVisible, graceExpiresAt }: GraceBannerProps) {
             <span>
               Host disconnected — reconnecting or room closes in{' '}
               <span className="font-mono font-bold tabular-nums text-[#1A1815]">
-                {secondsRemaining !== null ? formatCountdown(secondsRemaining) : '05:00'}
+                {secondsRemaining !== null ? formatCountdown(secondsRemaining) : '00:45'}
               </span>
             </span>
           </div>
