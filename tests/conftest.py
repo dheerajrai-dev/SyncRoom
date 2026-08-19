@@ -14,6 +14,11 @@ from sqlalchemy import text
 async def db_session():
     async with TestingSessionLocal() as session:
         yield session
+        try:
+            await session.execute(text("DELETE FROM messages; DELETE FROM participants; DELETE FROM rooms; DELETE FROM users;"))
+            await session.commit()
+        except Exception:
+            await session.rollback()
 
 @pytest_asyncio.fixture
 async def async_client():

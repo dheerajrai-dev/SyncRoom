@@ -1,8 +1,11 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.room_repository import get_room_by_code
 from app.db.participant_repository import get_active_participants
 from app.core.storage import manager, host_token
 from app.core.security import hash_token
+
+logger = logging.getLogger(__name__)
 
 async def perform_host_migration(db: AsyncSession, room_code: str):
     db_room = await get_room_by_code(db, room_code)
@@ -37,7 +40,7 @@ async def perform_host_migration(db: AsyncSession, room_code: str):
         
     # Promote new host
     new_host.role = "host"
-    new_host.nickname = "Host" # or keep their name? Usually host is just "Host"
+    new_host.nickname = "Host"
     
     await db.commit()
     
@@ -52,16 +55,15 @@ async def perform_host_migration(db: AsyncSession, room_code: str):
     
     # Send credentials ONLY to the new host
     new_host_conn = manager.get_connection(new_host_pid)
-    print(f"DEBUG MIGRATION: new_host_pid={new_host_pid}, conn_exists={new_host_conn is not None}", flush=True)
+    logger.debug("Host migration: new_host_pid=%s, conn_exists=%s", new_host_pid, new_host_conn is not None)
     if new_host_conn and new_host_conn.get("websocket"):
         try:
-            print(f"DEBUG MIGRATION: Attempting to send credentials to new host", flush=True)
             await new_host_conn["websocket"].send_json({
                 "type": "host_credentials",
                 "host_token": new_host_token
             })
-            print(f"DEBUG MIGRATION: Sent credentials successfully", flush=True)
+            logger.debug("Sent new host credentials to participant %s", new_host_pid)
         except Exception as e:
-            print(f"DEBUG MIGRATION: Failed to send credentials: {e}", flush=True)
+            logger.error("Failed to send credentials to new host: %s", e)
     else:
-        print(f"DEBUG MIGRATION: new_host_conn is None or websocket is missing. active_conns keys: {list(manager.active_connections.keys())}", flush=True)
+        logger.warning("New host connection not found or websocket missing for %s", new_host_pid)

@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 
 
 def hash_token(token: str) -> str:
@@ -6,5 +7,7 @@ def hash_token(token: str) -> str:
 
 
 def verify_token(token: str, token_hash: str) -> bool:
-    return hash_token(token) == token_hash
+    if not token or not token_hash:
+        return False
+    return hmac.compare_digest(hash_token(token), token_hash)
 

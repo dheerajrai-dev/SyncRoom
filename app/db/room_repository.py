@@ -55,7 +55,3 @@ async def delete_room_row(room_code: str) -> None:
             return
         await session.delete(db_room)
         await session.commit()
-
-async def get_hashed_token(db: AsyncSession, room_code: str):
-    hashed_host_token = await db.execute(select(Room.host_token_hash).where(Room.room_code == room_code))
-    return hashed_host_token.scalar_one_or_none()

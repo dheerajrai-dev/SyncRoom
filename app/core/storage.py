@@ -4,7 +4,6 @@ import uuid
 import asyncio
 from datetime import datetime, timezone
 from ..db.room_repository import delete_room_row
-from ..db.message_repository import create_message_row
 from ..db.session import AsyncSessionLocal
 from fastapi import WebSocket
 
@@ -217,14 +216,3 @@ async def close_and_delete_room(room_code: str):
     
     # Delete from DB
     await delete_room_row(room_code)
-
-def gather_export_data(room_name: str, active_participants: list, db_messages: list) -> dict:
-    participants = [p.nickname for p in active_participants]
-    return {
-        "room_name": room_name,
-        "participants": participants,
-        "messages": [
-            {"time": m.sent_at.isoformat(), "nickname": m.nickname, "content": m.content}
-            for m in db_messages
-        ],
-    }
