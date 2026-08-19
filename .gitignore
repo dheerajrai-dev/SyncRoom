@@ -6,7 +6,6 @@
 
 # Python compiled files
 *.pyc
-__init__.py
 
 # Python cache
 __pycache__/
